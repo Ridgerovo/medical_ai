@@ -9,6 +9,7 @@ from app.api.v1.image import router as image_router
 from app.api.v1.patient import router as patient_router
 from app.api.v1.analysis import router as analysis_router
 from app.api.v1.report import router as report_router
+from app.api.v1.stats import router as stats_router
 # 假设需要登录校验（示例，需与实际登录逻辑匹配）
 from app.services.auth import get_current_doctor
 
@@ -29,7 +30,13 @@ app.include_router(image_router, prefix=API_PREFIX)
 app.include_router(patient_router, prefix=API_PREFIX)
 app.include_router(analysis_router, prefix=API_PREFIX)
 app.include_router(report_router,prefix=API_PREFIX)
+app.include_router(stats_router, prefix=API_PREFIX)
+
+
+
 # 4. 根路径重定向到前端登录页
+
+
 @app.get("/", response_class=RedirectResponse)
 async def read_root():
     return RedirectResponse(url="/static/login.html")  # 前端登录页路径

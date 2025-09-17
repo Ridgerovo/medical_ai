@@ -1,4 +1,4 @@
-#!/C:/Users/86157/miniconda3/Lib/medical_ai/Scripts/python.exe
+#!/C:/Users/86157/miniconda3/Lib/medical_ai_backend/Scripts/python.exe
 import torch
 import cv2
 import numpy as np

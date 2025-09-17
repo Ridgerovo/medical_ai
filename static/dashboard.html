@@ -40,6 +40,9 @@
             .menu-active {
                 @apply bg-primary/10 text-primary border-l-4 border-primary;
             }
+            .loading-skeleton {
+                @apply bg-neutral-200 animate-pulse rounded;
+            }
         }
     </style>
 
@@ -117,7 +120,7 @@
                 </a>
 
 
-                <a href="#diagnosis-record" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                <a href="all_diagnosis.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
                     <i class="fa fa-file-text-o w-5 text-center mr-2"></i>
                     <span>诊断记录</span>
                 </a>
@@ -163,7 +166,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-neutral-400">累计影像数</p>
-                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">1,352</h3>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2" id="totalImages">1,352</h3>
                         </div>
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
                             <i class="fa fa-x-ray"></i>
@@ -175,7 +178,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-neutral-400">累计患者数</p>
-                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">896</h3>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2" id="totalPatients">896</h3>
                         </div>
                         <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
                             <i class="fa fa-user-o"></i>
@@ -187,7 +190,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-neutral-400">已完成诊断</p>
-                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">1,024</h3>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2" id="completedDiagnoses">1,024</h3>
                         </div>
                         <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center text-success">
                             <i class="fa fa-check-circle-o"></i>
@@ -199,7 +202,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-neutral-400">待处理任务</p>
-                            <h3 class="text-2xl font-bold text-danger mt-2">3</h3>
+                            <h3 class="text-2xl font-bold text-danger mt-2" id="pendingTasks">3</h3>
                         </div>
                         <div class="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center text-danger">
                             <i class="fa fa-clock-o"></i>
@@ -235,60 +238,42 @@
                 </a>
             </div>
 
-            <!-- 最近诊断记录 -->
-            <div class="bg-white rounded-lg shadow-sm p-5">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-medium text-neutral-600">最近诊断记录</h3>
-                    <a href="#all-records" class="text-sm text-primary hover:underline">查看全部</a>
-                </div>
+<!-- 最近诊断记录 -->
+<div class="bg-white rounded-lg shadow-sm p-5">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="font-medium text-neutral-600">最近诊断记录</h3>
+        <a href="all_diagnosis.html" class="text-sm text-primary hover:underline">查看全部</a>
+    </div>
 
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-neutral-200">
-                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">患者姓名</th>
-                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">影像类型</th>
-                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">诊断时间</th>
-                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">状态</th>
-                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">操作</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr class="border-b border-neutral-100 hover:bg-neutral-50">
-                                <td class="py-3 px-2 text-neutral-600">王某某</td>
-                                <td class="py-3 px-2 text-neutral-600">胸部CT</td>
-                                <td class="py-3 px-2 text-neutral-400">2024-05-20 09:30</td>
-                                <td class="py-3 px-2"><span class="px-2 py-1 bg-success/10 text-success rounded-full text-xs">已完成</span></td>
-                                <td class="py-3 px-2">
-                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
-                                </td>
-                            </tr>
-                            <tr class="border-b border-neutral-100 hover:bg-neutral-50">
-                                <td class="py-3 px-2 text-neutral-600">李某某</td>
-                                <td class="py-3 px-2 text-neutral-600">头部MRI</td>
-                                <td class="py-3 px-2 text-neutral-400">2024-05-19 14:15</td>
-                                <td class="py-3 px-2"><span class="px-2 py-1 bg-success/10 text-success rounded-full text-xs">已完成</span></td>
-                                <td class="py-3 px-2">
-                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
-                                </td>
-                            </tr>
-                            <tr class="hover:bg-neutral-50">
-                                <td class="py-3 px-2 text-neutral-600">张某某</td>
-                                <td class="py-3 px-2 text-neutral-600">腹部超声</td>
-                                <td class="py-3 px-2 text-neutral-400">2024-05-18 16:40</td>
-                                <td class="py-3 px-2"><span class="px-2 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">待审核</span></td>
-                                <td class="py-3 px-2">
-                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b border-neutral-200">
+                    <th class="text-left py-3 px-2 text-neutral-400 font-normal">患者姓名</th>
+                    <th class="text-left py-3 px-2 text-neutral-400 font-normal">影像类型</th>
+                    <th class="text-left py-3 px-2 text-neutral-400 font-normal">诊断时间</th>
+                    <th class="text-left py-3 px-2 text-neutral-400 font-normal">状态</th>
+                    <th class="text-left py-3 px-2 text-neutral-400 font-normal">操作</th>
+                </tr>
+            </thead>
+            <tbody id="recentRecordsTable">
+                <!-- 加载状态 -->
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-neutral-400">
+                        <i class="fa fa-spinner fa-spin mr-2"></i>加载中...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
         </main>
     </div>
 
     <script>
+        // API基础路径
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+
         // 页面加载时验证登录状态并加载用户信息
         document.addEventListener('DOMContentLoaded', () => {
             // 检查是否已登录
@@ -298,6 +283,33 @@
                 return;
             }
 
+                // 新增：加载最近诊断记录（关键步骤）
+    const doctorId = localStorage.getItem('doctorId');
+    if (doctorId) {
+        loadRecentDoctorReports(doctorId); // 调用接口获取数据
+    } else {
+        // 医生ID不存在时显示错误
+        document.getElementById('recentRecordsTable').innerHTML = `
+            <tr>
+                <td colspan="5" class="py-8 text-center text-danger">
+                    <i class="fa fa-exclamation-circle mr-2"></i>未获取到医生信息
+                </td>
+            </tr>
+        `;
+    }
+
+            // 加载用户信息
+            loadUserInfo();
+
+            // 加载统计数据
+            loadDashboardStats();
+
+            // 定时刷新数据（每5分钟）
+            setInterval(loadDashboardStats, 5 * 60 * 1000);
+        });
+
+        // 加载用户信息
+        function loadUserInfo() {
             // 从localStorage获取医生信息
             const doctorInfo = {
                 id: localStorage.getItem('doctorId'),
@@ -308,8 +320,8 @@
             };
 
             // 填充页面信息
-            document.getElementById('doctorName').textContent = doctorInfo.name;
-            document.getElementById('welcomeName').textContent = doctorInfo.name;
+            document.getElementById('doctorName').textContent = doctorInfo.name || '医生';
+            document.getElementById('welcomeName').textContent = doctorInfo.name || '医生';
             document.getElementById('doctorRole').textContent = doctorInfo.isAdmin ? '管理员' : '普通医生';
 
             // 显示当前日期
@@ -322,7 +334,7 @@
                 ? 'https://picsum.photos/id/1012/200/200'  // 男医生卡通头像
                 : 'https://picsum.photos/id/1027/200/200'; // 女医生卡通头像
             document.getElementById('doctorAvatar').innerHTML = `
-                <img src="${avatarSrc}" alt="${doctorInfo.gender}医生头像" class="w-full h-full object-cover">
+                <img src="${avatarSrc}" alt="${doctorInfo.gender || ''}医生头像" class="w-full h-full object-cover">
             `;
 
             // 如果是管理员，显示管理员菜单
@@ -345,7 +357,226 @@
                     window.location.href = 'login.html';
                 }
             });
-        });
+        }
+
+        // 新增：加载最近诊断记录
+async function loadRecentDoctorReports(doctorId) {
+    const tableBody = document.getElementById('recentRecordsTable');
+
+    try {
+        const response = await fetch(
+             `${API_BASE_URL}/reports/my/recent?doctor_id=${encodeURIComponent(doctorId)}&limit=3`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error('加载最近记录失败');
+        }
+
+        const records = await response.json();
+
+        // 状态样式映射（与其他页面保持一致）
+        const statusMap = {
+            0: { text: '已完成', class: 'bg-success/10 text-success' },
+            1: { text: '待审核', class: 'bg-yellow-100 text-yellow-600' },
+            2: { text: '已归档', class: 'bg-gray-100 text-gray-600' }
+        };
+
+        if (records.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="5" class="py-8 text-center text-neutral-400">
+                        暂无诊断记录
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        // 生成表格内容
+        tableBody.innerHTML = records.map(record => `
+            <tr class="border-b border-neutral-100 hover:bg-neutral-50">
+                <td class="py-3 px-2 text-neutral-600">${record.patient_name}</td>
+                <td class="py-3 px-2 text-neutral-600">${record.report_type}</td>
+                <td class="py-3 px-2 text-neutral-400">${formatDateTime(record.create_time)}</td>
+                <td class="py-3 px-2">
+                    <span class="px-2 py-1 ${statusMap[record.report_status]?.class || 'bg-gray-100 text-gray-600'} rounded-full text-xs">
+                        ${statusMap[record.report_status]?.text || '未知'}
+                    </span>
+                </td>
+                <td class="py-3 px-2">
+                    <a href="#" onclick="viewDiagnosisDetail('${record.report_id}')" class="text-primary hover:text-primary/80">查看</a>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('加载最近诊断记录失败:', error);
+        tableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="py-8 text-center text-danger">
+                    <i class="fa fa-exclamation-circle mr-2"></i>加载失败，请刷新页面
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// 新增：日期时间格式化工具
+function formatDateTime(dateTimeString) {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+        // 加载仪表盘统计数据
+        async function loadDashboardStats() {
+            try {
+                // 显示加载状态
+                showLoadingState();
+
+                // 调用后端API
+                const response = await fetch(`${API_BASE_URL}/stats/dashboard`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误：${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // 更新统计卡片数据
+                updateStatsCards(data);
+
+                // 更新最近诊断记录（如果接口返回了记录数据）
+                if (data.recent_records) {
+                    updateRecentRecords(data.recent_records);
+                }
+
+            } catch (error) {
+                console.error('加载统计数据失败：', error);
+                // 保留静态数据作为降级方案
+            } finally {
+                hideLoadingState();
+            }
+        }
+
+        // 更新统计卡片数据
+        function updateStatsCards(data) {
+            // 格式化数字为千分位
+            const formatNumber = (num) => num.toLocaleString('zh-CN');
+
+            // 更新累计影像数
+            document.getElementById('totalImages').textContent = formatNumber(data.total_images || 0);
+
+            // 更新累计患者数
+            document.getElementById('totalPatients').textContent = formatNumber(data.total_patients || 0);
+
+            // 更新已完成诊断
+            document.getElementById('completedDiagnoses').textContent = formatNumber(data.total_reports - data.pending_tasks || 0);
+
+            // 更新待处理任务
+            const pendingEl = document.getElementById('pendingTasks');
+            pendingEl.textContent = formatNumber(data.pending_tasks || 0);
+
+            // 待处理任务为0时移除红色
+            if (data.pending_tasks === 0) {
+                pendingEl.classList.remove('text-danger');
+                pendingEl.classList.add('text-neutral-600');
+            } else {
+                pendingEl.classList.add('text-danger');
+                pendingEl.classList.remove('text-neutral-600');
+            }
+        }
+
+        // 更新最近诊断记录表格
+        function updateRecentRecords(records) {
+            const tableBody = document.getElementById('recentRecordsTable');
+            tableBody.innerHTML = ''; // 清空现有内容
+
+            if (records.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="py-6 text-center text-neutral-400">
+                            暂无诊断记录
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // 生成表格行
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-neutral-100 hover:bg-neutral-50';
+
+                // 状态样式映射
+                const statusMap = {
+                    'completed': { class: 'bg-success/10 text-success', text: '已完成' },
+                    'pending': { class: 'bg-yellow-100 text-yellow-600', text: '待审核' },
+                    'processing': { class: 'bg-primary/10 text-primary', text: '处理中' }
+                };
+                const status = statusMap[record.status] || statusMap.pending;
+
+                row.innerHTML = `
+                    <td class="py-3 px-2 text-neutral-600">${record.patient_name}</td>
+                    <td class="py-3 px-2 text-neutral-600">${record.image_type}</td>
+                    <td class="py-3 px-2 text-neutral-400">${record.diagnose_time}</td>
+                    <td class="py-3 px-2">
+                        <span class="px-2 py-1 ${status.class} rounded-full text-xs">${status.text}</span>
+                    </td>
+                    <td class="py-3 px-2">
+                        <a href="image_detail.html?id=${record.id}" class="text-primary hover:text-primary/80">查看</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 显示加载状态
+        function showLoadingState() {
+            const statsElements = [
+                'totalImages',
+                'totalPatients',
+                'completedDiagnoses',
+                'pendingTasks'
+            ];
+
+            statsElements.forEach(id => {
+                const element = document.getElementById(id);
+                element.textContent = '加载中...';
+                element.classList.add('loading-skeleton');
+            });
+        }
+
+        // 隐藏加载状态
+        function hideLoadingState() {
+            const statsElements = [
+                'totalImages',
+                'totalPatients',
+                'completedDiagnoses',
+                'pendingTasks'
+            ];
+
+            statsElements.forEach(id => {
+                const element = document.getElementById(id);
+                element.classList.remove('loading-skeleton');
+            });
+        }
     </script>
 </body>
 </html>

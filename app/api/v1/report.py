@@ -6,7 +6,9 @@ from fastapi import (
     File,
     Form,
     Path as FastAPIPath,  # 为FastAPI路径参数类取别名，避免与pathlib冲突
-    Query
+    Query,
+    Body
+
 )
 from sqlalchemy.orm import Session
 from app.db.session import get_db
@@ -136,53 +138,68 @@ def get_reports_by_doctor(
     return reports
 
 
-
 @router.patch("/{report_id}", response_model=ReportResponse, summary="更新报告描述和状态")
 def update_report(
         # 路径参数（使用FastAPIPath避免命名冲突）
         report_id: str = FastAPIPath(..., description="要更新的报告ID"),
         # 更新数据（通过Pydantic模型验证）
-        update_data: ReportUpdate = Depends(),
+        update_data: ReportUpdate = Body(),
         # 数据库依赖
         db: Session = Depends(get_db)
 ):
-    # 1. 查询报告是否存在
+    # 1. 记录请求基本信息
+    logger.info(f"开始处理报告更新请求 - 报告ID: {report_id}")
+    logger.info(f"接收的更新参数: {update_data.dict()}")  # 关键日志：打印所有接收的参数
+
+    # 2. 查询报告是否存在
     db_report = db.query(Report).filter(Report.report_id == report_id).first()
     if not db_report:
+        logger.warning(f"报告不存在 - 报告ID: {report_id}")  # 记录不存在的情况
         raise HTTPException(
             status_code=404,
             detail=f"报告不存在（ID：{report_id}）"
         )
 
     try:
-        # 2. 更新描述（仅当提供了新描述时）
+        # 3. 记录原始数据（用于对比）
+        original_description = db_report.description
+        original_status = db_report.report_status
+        logger.info(f"更新前状态 - 描述: {original_description[:50]}..., 状态: {original_status}")  # 截断长描述
+
+        # 4. 更新描述（仅当提供了新描述时）
         if update_data.description is not None:
+            logger.info(f"更新描述 - 旧值: {original_description[:50]}..., 新值: {update_data.description[:50]}...")
             db_report.description = update_data.description
 
-        # 3. 更新状态（仅当提供了新状态且状态值合法时）
+        # 5. 更新状态（仅当提供了新状态且状态值合法时）
         if update_data.report_status is not None:
             if update_data.report_status not in [0, 1, 2]:
+                logger.error(f"状态值非法 - 传入值: {update_data.report_status}, 合法值: [0,1,2]")
                 raise HTTPException(
                     status_code=400,
                     detail="报告状态仅支持：0（正常）、1（审核中）、2（已归档）"
                 )
+            logger.info(f"更新状态 - 旧值: {original_status}, 新值: {update_data.report_status}")
             db_report.report_status = update_data.report_status
 
-        # 4. 提交更新到数据库
+        # 6. 提交更新到数据库
         db.commit()
         db.refresh(db_report)
+
+        # 7. 记录更新结果
+        logger.info(f"报告更新成功 - 报告ID: {report_id}, 最终状态: {db_report.report_status}")
         return db_report
 
     except HTTPException as e:
+        logger.error(f"更新参数验证失败 - 错误: {str(e)}")
         raise e
     except Exception as e:
         db.rollback()  # 出错时回滚事务
-        logger.error(f"更新报告失败（ID：{report_id}）：{str(e)}", exc_info=True)
+        logger.error(f"更新报告失败（ID：{report_id}）：{str(e)}", exc_info=True)  # 记录完整堆栈
         raise HTTPException(
             status_code=500,
             detail=f"报告更新失败：{str(e)}"
         )
-
 
 @router.delete("/{report_id}", status_code=204, summary="删除报告（含关联文件）")
 def delete_report(
@@ -268,3 +285,27 @@ def get_report_by_id(
     return report
 
 
+@router.get("/my/recent", response_model=List[ReportResponse], summary="获取当前医生最近3条诊断记录")
+def get_my_recent_reports(
+        doctor_id: str = Query(..., description="医生ID（从前端localStorage获取）"),
+        limit: int = Query(3, ge=1, le=10, description="获取记录数量，默认3条"),
+        db: Session = Depends(get_db)
+):
+    """
+    获取当前登录医生自己最近的诊断记录（按创建时间倒序）
+    - 直接通过前端传递的doctor_id查询（与前端localStorage存储的doctorId对应）
+    - 无需权限校验，仅返回该医生的最近记录
+    """
+    # 验证医生ID是否存在（可选，根据业务需求决定是否保留）
+    if not db.query(Report).filter(Report.doctor_id == doctor_id).first():
+        raise HTTPException(
+            status_code=404,
+            detail=f"未找到该医生的诊断记录（医生ID：{doctor_id}）"
+        )
+
+    # 查询并返回最近的limit条记录
+    return db.query(Report) \
+        .filter(Report.doctor_id == doctor_id) \
+        .order_by(Report.create_time.desc()) \
+        .limit(limit) \
+        .all()
