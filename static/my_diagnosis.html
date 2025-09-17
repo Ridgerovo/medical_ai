@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医生诊断报告系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        // 配置Tailwind自定义颜色和字体
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                            700: '#1D2129',
+                        }
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 2px 14px 0 rgba(0, 0, 0, 0.06);
+            }
+            .hover-lift {
+                transition: transform 0.2s, box-shadow 0.2s;
+            }
+            .hover-lift:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-inter text-neutral-700 min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white border-b border-neutral-200 sticky top-0 z-10">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-heartbeat text-primary text-2xl"></i>
+                <h1 class="text-xl font-semibold text-neutral-700">智能诊断系统</h1>
+            </div>
+            <div class="flex items-center space-x-4">
+                <button class="text-neutral-500 hover:text-primary transition-colors">
+                    <i class="fa fa-bell-o"></i>
+                </button>
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <i class="fa fa-user"></i>
+                    </div>
+                    <span class="text-sm font-medium" id="headerDoctorName">加载中...</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-6">
+        <!-- 医生信息卡片 -->
+        <section class="bg-white rounded-lg card-shadow p-5 mb-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+                <i class="fa fa-user-md text-primary mr-2"></i>医生信息
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <p class="text-sm text-neutral-500">姓名</p>
+                    <p class="font-medium" id="doctorName">加载中...</p>
+                </div>
+                <div>
+                    <p class="text-sm text-neutral-500">医生工号</p>
+                    <p class="font-medium" id="doctorId">加载中...</p>
+                </div>
+                <div>
+                    <p class="text-sm text-neutral-500">角色</p>
+                    <p class="font-medium" id="doctorRole">加载中...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 诊断记录部分 -->
+        <section class="bg-white rounded-lg card-shadow mb-6">
+            <div class="p-5 border-b border-neutral-100 flex justify-between items-center">
+                <h2 class="text-lg font-semibold flex items-center">
+                    <i class="fa fa-file-text-o text-primary mr-2"></i>诊断记录
+                </h2>
+                <span class="text-sm text-neutral-500" id="recordCount">共 0 条记录</span>
+            </div>
+
+            <!-- 搜索和筛选区域 -->
+            <div class="p-5 border-b border-neutral-100">
+                <div class="flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <input
+                            type="text"
+                            placeholder="输入患者姓名搜索"
+                            class="w-full px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                            id="patientSearch"
+                        >
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select class="px-4 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all bg-white" id="statusFilter">
+                            <option value="all">全部状态</option>
+                            <option value="0">正常</option>
+                            <option value="1">审核中</option>
+                            <option value="2">已归档</option>
+                        </select>
+                        <button class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors flex items-center" id="searchButton">
+                            <i class="fa fa-search mr-1"></i> 搜索
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 诊断记录列表 -->
+            <div id="recordsContainer" class="divide-y divide-neutral-100">
+                <!-- 加载状态 -->
+                <div id="loadingIndicator" class="p-10 text-center">
+                    <i class="fa fa-circle-o-notch fa-spin text-primary text-2xl mb-2"></i>
+                    <p class="text-neutral-500">正在加载诊断记录...</p>
+                </div>
+
+                <!-- 空状态 -->
+                <div id="emptyState" class="p-10 text-center hidden">
+                    <i class="fa fa-file-text-o text-neutral-300 text-4xl mb-3"></i>
+                    <p class="text-neutral-500">暂无诊断记录</p>
+                </div>
+
+                <!-- 错误状态 -->
+                <div id="errorState" class="p-10 text-center hidden">
+                    <i class="fa fa-exclamation-circle text-red-500 text-4xl mb-3"></i>
+                    <p class="text-neutral-500 mb-2">加载诊断记录失败</p>
+                    <button id="retryButton" class="text-primary hover:text-primary/80 transition-colors">
+                        重试
+                    </button>
+                </div>
+
+                <!-- 诊断记录将通过JavaScript动态插入 -->
+                <div id="recordsList"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 诊断详情模态框 -->
+    <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div class="p-5 border-b border-neutral-200 flex justify-between items-center sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-neutral-700" id="modalTitle">诊断详情</h3>
+                <button id="closeModal" class="text-neutral-500 hover:text-neutral-700">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="p-5" id="modalContent">
+                <!-- 模态框内容将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 简化的编辑模态框 -->
+<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-lg">
+        <div class="p-5 border-b border-neutral-200 flex justify-between items-center">
+            <h3 class="text-lg font-semibold text-neutral-700">编辑诊断报告</h3>
+            <button id="closeEditModal" class="text-neutral-500 hover:text-neutral-700">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="p-5">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-neutral-700 mb-1">诊断结论</label>
+                <textarea id="editDiagnosisText" class="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary min-h-[150px]"></textarea>
+                <p class="text-xs text-neutral-500 mt-1">修改后报告状态将自动变为"审核中"</p>
+            </div>
+        </div>
+        <div class="p-5 border-t border-neutral-200 flex justify-end gap-3">
+            <button id="cancelEditBtn" class="px-4 py-2 border border-neutral-300 rounded hover:bg-neutral-50 transition-colors">
+                取消
+            </button>
+            <button id="saveEditBtn" class="px-4 py-2 bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                确定修改
+            </button>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+    <script>
+
+        window.viewDiagnosisDetail = viewDiagnosisDetail;
+        window.editDiagnosis = editDiagnosis;
+
+        // 全局存储当前登录医生信息
+        let currentDoctor = null;
+        let currentEditingReportId = null;
+        // API基础URL，根据实际部署情况修改
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+
+            bindEditModalEvents();
+
+            // 先加载医生信息，成功后再加载诊断记录
+            loadDoctorInfo().then(doctor => {
+                currentDoctor = doctor;
+                // 填充医生信息到页面
+                document.getElementById('doctorName').textContent = doctor.name;
+                document.getElementById('doctorId').textContent = doctor.id;
+                document.getElementById('doctorRole').textContent = doctor.role ? '管理员' : '普通医生';
+                document.getElementById('headerDoctorName').textContent = doctor.name;
+
+                // 加载诊断记录
+                loadDiagnosisReports(doctor.id);
+            }).catch(error => {
+                console.error("加载医生信息失败:", error);
+                // 显示错误信息
+                document.getElementById('doctorName').textContent = '加载失败';
+                document.getElementById('doctorId').textContent = '加载失败';
+                document.getElementById('doctorRole').textContent = '加载失败';
+                document.getElementById('headerDoctorName').textContent = '未登录';
+
+                // 显示记录加载错误
+                showErrorState();
+            });
+
+            // 绑定重试按钮事件
+            document.getElementById('retryButton').addEventListener('click', function() {
+                if (currentDoctor) {
+                    loadDiagnosisReports(currentDoctor.id);
+                } else {
+                    loadDoctorInfo().then(doctor => {
+                        currentDoctor = doctor;
+                        loadDiagnosisReports(doctor.id);
+                    });
+                }
+            });
+
+            // 绑定搜索按钮事件
+            document.getElementById('searchButton').addEventListener('click', function() {
+                performSearch();
+            });
+
+            // 绑定回车键搜索
+            document.getElementById('patientSearch').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch();
+                }
+            });
+
+            // 绑定关闭模态框事件
+            document.getElementById('closeModal').addEventListener('click', function() {
+                document.getElementById('detailModal').classList.remove('flex');
+                document.getElementById('detailModal').classList.add('hidden');
+            });
+        });
+
+        // 加载当前登录医生信息
+        async function loadDoctorInfo() {
+             // 从localStorage获取登录时存储的医生信息
+    const doctorInfo = {
+        id: localStorage.getItem('doctorId'),
+        name: localStorage.getItem('doctorName'),
+        role: localStorage.getItem('doctorIsAdmin') === '1' ? '管理员' : '普通医生'
+    };
+
+    // 验证信息完整性
+    if (!doctorInfo.id || !doctorInfo.name) {
+        console.error("医生信息不完整，可能未登录");
+        // 未登录状态跳转至登录页
+        window.location.href = 'login.html';
+        return null;
+    }
+
+    return doctorInfo;
+        }
+
+        // 执行搜索操作
+        function performSearch() {
+            if (!currentDoctor) {
+                alert('请先登录');
+                return;
+            }
+
+            const patientName = document.getElementById('patientSearch').value.trim();
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            loadDiagnosisReports(currentDoctor.id, patientName, statusFilter);
+        }
+
+        // 根据医生ID加载诊断报告
+        async function loadDiagnosisReports(doctorId, patientName = '', status = 'all') {
+            // 显示加载状态
+             console.log("当前医生ID:", doctorId);
+            showLoadingState();
+
+            try {
+                // 构建API请求URL
+                let url = `${API_BASE_URL}/api/v1/reports/doctor/${encodeURIComponent(doctorId)}`;
+                const params = new URLSearchParams();
+
+                // 添加搜索参数
+                if (patientName) {
+                    params.append('patientName', patientName);
+                }
+                if (status !== 'all') {
+                    params.append('report_status', status);
+                }
+
+                // 添加分页参数
+                params.append('skip', 0);
+                params.append('limit', 100);
+
+                // 如果有参数，添加到URL
+                if (params.toString()) {
+                    url += `?${params.toString()}`;
+                }
+
+                // 调用API获取数据
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+
+                const reports = await response.json();
+
+                // 显示获取到的记录
+                displayRecords(reports);
+
+            } catch (error) {
+                console.error("加载诊断记录失败:", error);
+                showErrorState();
+            }
+        }
+
+        // 显示记录列表
+        function displayRecords(reports) {
+            hideAllStates();
+            const recordsList = document.getElementById('recordsList');
+            const recordCount = document.getElementById('recordCount');
+
+            // 更新记录计数
+            recordCount.textContent = `共 ${reports.length} 条记录`;
+
+            // 清空现有列表
+            recordsList.innerHTML = '';
+
+            // 如果没有记录，显示空状态
+            if (reports.length === 0) {
+                document.getElementById('emptyState').classList.remove('hidden');
+                return;
+            }
+
+            // 遍历记录并创建列表项
+            reports.forEach(record => {
+                // 转换状态显示文本和样式
+                const statusMap = {
+                    0: { text: '正常', class: 'bg-success/10 text-success' },
+                    1: { text: '审核中', class: 'bg-yellow-100 text-yellow-800' },
+                    2: { text: '已归档', class: 'bg-gray-100 text-gray-800' }
+                };
+                const status = statusMap[record.report_status] || { text: '未知', class: 'bg-gray-100 text-gray-800' };
+
+                // 创建记录卡片
+                const recordCard = document.createElement('div');
+                recordCard.className = 'p-5 hover:bg-neutral-50 transition-colors';
+                recordCard.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center justify-between mb-3">
+                        <div>
+                            <span class="font-medium">诊断编号: ${record.report_id}</span>
+                            <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.class}">
+                                ${status.text}
+                            </span>
+                        </div>
+                        <div class="text-sm text-neutral-500 mt-1 md:mt-0">
+                            诊断时间: ${formatDateTime(record.create_time)}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <div>
+                            <p class="text-sm text-neutral-500">患者姓名</p>
+                            <p>${record.patient_name}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-neutral-500">报告类型</p>
+                            <p>${record.report_type}</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <p class="text-sm text-neutral-500 mb-1">诊断描述</p>
+                        <p class="text-neutral-600 bg-neutral-50 p-3 rounded-lg text-sm">${record.description || '无'}</p>
+                    </div>
+
+                    <div class="mb-4">
+                        <p class="text-sm text-neutral-500 mb-1">医生姓名</p>
+                        <p class="text-neutral-600 p-3 rounded-lg text-sm border border-neutral-100">${record.doctor_name || '未知'}</p>
+                    </div>
+
+                    <div class="flex justify-end gap-2">
+                        <button onclick="viewDiagnosisDetail('${record.report_id}')" class="px-3 py-1 text-sm border border-neutral-300 rounded hover:bg-neutral-50 transition-colors">
+                            查看详情
+                        </button>
+                        <button onclick="editDiagnosis('${record.report_id}')" class="px-3 py-1 text-sm bg-primary text-white rounded hover:bg-primary/90 transition-colors">
+                            编辑
+                        </button>
+                    </div>
+                `;
+                recordsList.appendChild(recordCard);
+            });
+        }
+
+        // 查看诊断详情
+        async function viewDiagnosisDetail(reportId) {
+            try {
+                // 修复API地址，添加/api/v1前缀
+                const response = await fetch(`${API_BASE_URL}/api/v1/reports/${reportId}`);
+
+                if (!response.ok) {
+                    throw new Error(`获取详情失败: ${response.status}`);
+                }
+
+                const report = await response.json();
+
+                // 显示详情模态框
+                showDiagnosisDetail(report);
+
+            } catch (error) {
+                console.error("获取诊断详情失败:", error);
+                alert("获取诊断详情失败，请稍后重试");
+            }
+        }
+
+        // 编辑诊断报告
+async function editDiagnosis(reportId) {
+    try {
+        // 调用API获取报告详情
+        const response = await fetch(`${API_BASE_URL}/api/v1/reports/${reportId}`);
+
+        if (!response.ok) {
+            throw new Error(`获取报告失败: ${response.status}`);
+        }
+
+        const report = await response.json();
+        currentEditingReportId = reportId;
+
+        // 填充当前诊断描述到文本框
+        document.getElementById('editDiagnosisText').value = report.description || '';
+
+        // 显示编辑模态框
+        document.getElementById('editModal').classList.remove('hidden');
+        document.getElementById('editModal').classList.add('flex');
+
+    } catch (error) {
+        console.error("获取报告详情失败:", error);
+        alert("获取报告详情失败，请稍后重试");
+    }
+}
+
+// 绑定编辑模态框事件
+function bindEditModalEvents() {
+    // 关闭模态框
+    document.getElementById('closeEditModal').addEventListener('click', () => {
+        document.getElementById('editModal').classList.remove('flex');
+        document.getElementById('editModal').classList.add('hidden');
+        currentEditingReportId = null;
+    });
+
+    // 取消编辑
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        document.getElementById('editModal').classList.remove('flex');
+        document.getElementById('editModal').classList.add('hidden');
+        currentEditingReportId = null;
+    });
+
+    // 保存编辑（核心：调用后端API）
+    document.getElementById('saveEditBtn').addEventListener('click', async () => {
+        if (!currentEditingReportId) return;
+
+        const newDescription = document.getElementById('editDiagnosisText').value.trim();
+        if (!newDescription) {
+            alert('诊断结论不能为空');
+            return;
+        }
+
+        try {
+            // 调用后端PATCH接口更新报告
+            const response = await fetch(
+                `${API_BASE_URL}/api/v1/reports/${currentEditingReportId}`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                        description: newDescription,
+                        report_status: 1  // 按需求自动改为“审核中”
+                    })
+                }
+            );
+
+            // 处理响应
+            const responseText = await response.text();
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+            } catch (e) {
+                responseData = { detail: responseText };
+            }
+
+            if (!response.ok) {
+                throw new Error(responseData.detail || `更新失败: ${response.statusText}`);
+            }
+
+            // 更新成功后刷新列表并关闭模态框
+            alert('报告修改成功，已更新为审核中状态');
+            document.getElementById('editModal').classList.remove('flex');
+            document.getElementById('editModal').classList.add('hidden');
+            loadDiagnosisReports(currentDoctor.id);  // 重新加载列表
+
+        } catch (error) {
+            console.error('更新报告失败:', error);
+            alert(`更新失败: ${error.message}`);
+        }
+    });
+
+    // 点击模态框外部关闭
+    document.getElementById('editModal').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('editModal')) {
+            document.getElementById('editModal').classList.remove('flex');
+            document.getElementById('editModal').classList.add('hidden');
+            currentEditingReportId = null;
+        }
+    });
+}
+
+        // 显示诊断详情
+        function showDiagnosisDetail(report) {
+            const modal = document.getElementById('detailModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+
+            // 更新模态框标题
+            modalTitle.textContent = `诊断详情 #${report.report_id}`;
+
+            // 转换状态显示文本和样式
+            const statusMap = {
+                0: { text: '正常', class: 'bg-success/10 text-success' },
+                1: { text: '审核中', class: 'bg-yellow-100 text-yellow-800' },
+                2: { text: '已归档', class: 'bg-gray-100 text-gray-800' }
+            };
+            const status = statusMap[report.report_status] || { text: '未知', class: 'bg-gray-100 text-gray-800' };
+
+            // 格式化日期时间
+            const formattedTime = formatDateTime(report.create_time);
+
+            // 填充模态框内容
+            modalContent.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">诊断ID</p>
+                        <p class="font-medium">${report.report_id}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">诊断时间</p>
+                        <p>${formattedTime}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">患者信息</p>
+                        <p>${report.patient_name}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">报告类型</p>
+                        <p>${report.report_type}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">主治医生</p>
+                        <p>${report.doctor_name}</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-500 mb-1">状态</p>
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status.class}">
+                            ${status.text}
+                        </span>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h4 class="text-base font-medium text-neutral-700 mb-2">诊断描述</h4>
+                    <div class="bg-neutral-50 p-4 rounded-lg border border-neutral-200">
+                        <p class="text-neutral-600 whitespace-pre-line">${report.description || '无诊断描述'}</p>
+                    </div>
+                </div>
+
+${report.original_image_path ? `
+<div class="mb-6">
+    <h4 class="text-base font-medium text-neutral-700 mb-2">医学影像资料</h4>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <h5 class="text-sm font-medium text-neutral-600 mb-2">原始影像</h5>
+            <div class="bg-neutral-100 rounded-lg overflow-hidden border border-neutral-200">
+                <!-- 修正：使用相对路径 + 后端接口 -->
+                <img src="${API_BASE_URL}/api/v1/medical-images/file?file_path=${encodeURIComponent(getRelativePath(report.original_image_path))}"
+                     alt="原始医学影像" class="w-full h-auto object-contain">
+            </div>
+        </div>
+        ${report.analyzed_image_path ? `
+        <div>
+            <h5 class="text-sm font-medium text-neutral-600 mb-2">AI分析后影像</h5>
+            <div class="bg-neutral-100 rounded-lg overflow-hidden border border-neutral-200">
+                <!-- 修正：使用相对路径 + 后端接口 -->
+                <img src="${API_BASE_URL}/api/v1/medical-images/file?file_path=${encodeURIComponent(getRelativePath(report.analyzed_image_path))}"
+                     alt="AI分析后医学影像" class="w-full h-auto object-contain">
+            </div>
+        </div>
+        ` : ''}
+    </div>
+</div>
+` : ''}
+            `;
+
+            // 显示模态框
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+
+        // 格式化日期时间
+        function formatDateTime(dateTimeString) {
+            const date = new Date(dateTimeString);
+            return date.toLocaleString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // 辅助函数：提取相对于存储根目录的路径（需与后端配置一致）
+function getRelativePath(fullPath) {
+    // 后端存储根目录（需与IMAGE_STORAGE["local_root"]配置完全一致）
+    const STORAGE_ROOT = "data/local_images";
+
+    // 统一路径分隔符
+    const normalizedFullPath = fullPath.replace(/\\/g, '/');
+    const normalizedRoot = STORAGE_ROOT.replace(/\\/g, '/');
+
+    // 提取相对路径
+    if (normalizedFullPath.startsWith(normalizedRoot)) {
+        return normalizedFullPath.slice(normalizedRoot.length + 1);
+    }
+
+    // 路径不匹配时的容错处理
+    console.warn("图片路径不在允许的存储目录内:", fullPath);
+    return fullPath;
+}
+
+
+        // 显示加载状态
+        function showLoadingState() {
+            hideAllStates();
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+        }
+
+        // 显示错误状态
+        function showErrorState() {
+            hideAllStates();
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+
+        // 隐藏所有状态提示
+        function hideAllStates() {
+            document.getElementById('loadingIndicator').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

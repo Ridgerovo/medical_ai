@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人信息 - 医疗AI系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            }
+            .avatar-frame {
+                border: 4px solid white;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+                    <i class="fa fa-stethoscope"></i>
+                </div>
+                <h1 class="text-lg font-bold text-neutral-600">医疗AI辅助诊断系统</h1>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-3">
+                    <div id="headerAvatar" class="w-9 h-9 rounded-full overflow-hidden avatar-frame">
+                        <!-- 头像将通过JS动态设置 -->
+                    </div>
+                    <div>
+                        <p id="headerDoctorName" class="text-sm font-medium text-neutral-600">加载中...</p>
+                        <p id="headerDoctorRole" class="text-xs text-neutral-400">普通医生</p>
+                    </div>
+                </div>
+
+                <button id="logoutBtn" class="flex items-center space-x-1 text-sm text-neutral-500 hover:text-danger transition-colors">
+                    <i class="fa fa-sign-out"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 中间内容区 -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="mb-6 flex items-center justify-between">
+            <div class="flex items-center">
+                <a href="dashboard.html" class="text-neutral-500 hover:text-primary transition-colors mr-4">
+                    <i class="fa fa-arrow-left"></i>
+                </a>
+                <h2 class="text-xl font-bold text-neutral-600">个人信息</h2>
+            </div>
+            <button id="editBtn" class="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90 transition-colors">
+                <i class="fa fa-pencil mr-1"></i> 编辑信息
+            </button>
+        </div>
+
+        <div class="bg-white rounded-lg card-shadow p-6 md:p-8 max-w-3xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+                <!-- 头像区域 -->
+                <div class="flex flex-col items-center">
+                    <div id="avatarContainer" class="w-36 h-36 rounded-full overflow-hidden avatar-frame mb-4">
+                        <!-- 头像将通过JS动态设置 -->
+                    </div>
+                    <label class="cursor-pointer text-sm text-primary hover:text-primary/80 transition-colors flex items-center">
+                        <i class="fa fa-camera mr-1"></i> 点击更换头像
+                    </label>
+                    <input type="file" id="avatarUpload" accept="image/*" class="hidden">
+                </div>
+
+                <!-- 信息详情 -->
+                <div class="flex-1 w-full">
+                    <form id="personalInfoForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">姓名</label>
+                                <input type="text" id="name" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">医生工号</label>
+                                <input type="text" id="employeeId" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">性别</label>
+                                <input type="text" id="gender" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">年龄</label>
+                                <input type="number" id="age" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">角色</label>
+                                <input type="text" id="role" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">注册时间</label>
+                                <input type="text" id="registerTime" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-neutral-500 mb-1">最后登录时间</label>
+                                <input type="text" id="lastLoginTime" class="w-full px-4 py-2 border border-neutral-200 rounded-md bg-neutral-50 cursor-not-allowed" readonly>
+                            </div>
+                        </div>
+
+                        <!-- 密码修改 -->
+                        <div class="mt-8 pt-6 border-t border-neutral-100">
+                            <h3 class="text-base font-medium text-neutral-600 mb-4">密码修改</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="oldPassword" class="block text-sm font-medium text-neutral-500 mb-1">原密码</label>
+                                    <input type="password" id="oldPassword" class="w-full px-4 py-2 border border-neutral-200 rounded-md" disabled>
+                                </div>
+                                <div>
+                                    <label for="newPassword" class="block text-sm font-medium text-neutral-500 mb-1">新密码</label>
+                                    <input type="password" id="newPassword" class="w-full px-4 py-2 border border-neutral-200 rounded-md" disabled placeholder="至少6位字符">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label for="confirmPassword" class="block text-sm font-medium text-neutral-500 mb-1">确认新密码</label>
+                                    <input type="password" id="confirmPassword" class="w-full px-4 py-2 border border-neutral-200 rounded-md" disabled>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="submitButtons" class="mt-8 flex justify-end gap-3 hidden">
+                            <button type="button" id="cancelBtn" class="px-4 py-2 border border-neutral-300 text-neutral-600 rounded-md text-sm hover:bg-neutral-50 transition-colors">
+                                取消
+                            </button>
+                            <button type="button" id="saveBtn" class="px-4 py-2 bg-primary text-white rounded-md text-sm hover:bg-primary/90 transition-colors">
+                                保存修改
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="mt-12 py-4 border-t border-neutral-200">
+        <div class="container mx-auto px-4 text-center text-sm text-neutral-500">
+            © 2024 医疗AI辅助诊断系统 - 版权所有
+        </div>
+    </footer>
+
+    <script>
+        // 页面加载时验证登录状态并加载用户信息
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查是否已登录
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 从localStorage获取医生信息
+            const doctorInfo = {
+                id: localStorage.getItem('doctorId'),
+                name: localStorage.getItem('doctorName'),
+                gender: localStorage.getItem('doctorGender'),
+                age: localStorage.getItem('doctorAge'),
+                isAdmin: localStorage.getItem('doctorIsAdmin') === '1',
+                registerTime: '2024-01-15 09:30:00', // 实际项目中从API获取
+                lastLoginTime: new Date().toLocaleString()
+            };
+
+            // 填充页面信息
+            document.getElementById('name').value = doctorInfo.name;
+            document.getElementById('employeeId').value = doctorInfo.id;
+            document.getElementById('gender').value = doctorInfo.gender;
+            document.getElementById('age').value = doctorInfo.age;
+            document.getElementById('role').value = doctorInfo.isAdmin ? '管理员' : '普通医生';
+            document.getElementById('registerTime').value = doctorInfo.registerTime;
+            document.getElementById('lastLoginTime').value = doctorInfo.lastLoginTime;
+
+            // 头部信息
+            document.getElementById('headerDoctorName').textContent = doctorInfo.name;
+            document.getElementById('headerDoctorRole').textContent = doctorInfo.isAdmin ? '管理员' : '普通医生';
+
+            // 设置头像（根据性别）
+            const avatarSrc = doctorInfo.gender === '男'
+                ? 'https://picsum.photos/id/1012/200/200'  // 男医生卡通头像
+                : 'https://picsum.photos/id/1027/200/200'; // 女医生卡通头像
+
+            document.getElementById('avatarContainer').innerHTML = `
+                <img src="${avatarSrc}" alt="${doctorInfo.gender}医生头像" class="w-full h-full object-cover">
+            `;
+            document.getElementById('headerAvatar').innerHTML = `
+                <img src="${avatarSrc}" alt="${doctorInfo.gender}医生头像" class="w-full h-full object-cover">
+            `;
+
+            // 编辑按钮事件
+            document.getElementById('editBtn').addEventListener('click', () => {
+                document.getElementById('editBtn').classList.add('hidden');
+                document.getElementById('submitButtons').classList.remove('hidden');
+
+                // 允许编辑的字段
+                document.getElementById('name').removeAttribute('readonly');
+                document.getElementById('age').removeAttribute('readonly');
+                document.getElementById('name').classList.remove('bg-neutral-50', 'cursor-not-allowed');
+                document.getElementById('age').classList.remove('bg-neutral-50', 'cursor-not-allowed');
+
+                // 密码字段启用
+                document.getElementById('oldPassword').removeAttribute('disabled');
+                document.getElementById('newPassword').removeAttribute('disabled');
+                document.getElementById('confirmPassword').removeAttribute('disabled');
+            });
+
+            // 取消按钮事件
+            document.getElementById('cancelBtn').addEventListener('click', () => {
+                document.getElementById('submitButtons').classList.add('hidden');
+                document.getElementById('editBtn').classList.remove('hidden');
+
+                // 恢复只读状态
+                document.getElementById('name').setAttribute('readonly', true);
+                document.getElementById('age').setAttribute('readonly', true);
+                document.getElementById('name').classList.add('bg-neutral-50', 'cursor-not-allowed');
+                document.getElementById('age').classList.add('bg-neutral-50', 'cursor-not-allowed');
+
+                // 禁用密码字段
+                document.getElementById('oldPassword').setAttribute('disabled', true);
+                document.getElementById('newPassword').setAttribute('disabled', true);
+                document.getElementById('confirmPassword').setAttribute('disabled', true);
+
+                // 恢复原始值
+                document.getElementById('name').value = doctorInfo.name;
+                document.getElementById('age').value = doctorInfo.age;
+            });
+
+            // 保存按钮事件
+            document.getElementById('saveBtn').addEventListener('click', () => {
+                const newName = document.getElementById('name').value.trim();
+                const newAge = document.getElementById('age').value;
+
+                if (!newName) {
+                    alert('姓名不能为空');
+                    return;
+                }
+
+                if (!newAge || newAge < 22 || newAge > 65) {
+                    alert('年龄必须在22-65之间');
+                    return;
+                }
+
+                // 密码验证
+                const newPwd = document.getElementById('newPassword').value;
+                if (newPwd) {
+                    if (!document.getElementById('oldPassword').value) {
+                        alert('请输入原密码');
+                        return;
+                    }
+                    if (newPwd.length < 6) {
+                        alert('新密码至少6位');
+                        return;
+                    }
+                    if (newPwd !== document.getElementById('confirmPassword').value) {
+                        alert('两次密码不一致');
+                        return;
+                    }
+                }
+
+                // 保存修改（实际项目中调用API）
+                localStorage.setItem('doctorName', newName);
+                localStorage.setItem('doctorAge', newAge);
+
+                alert('信息修改成功');
+                window.location.reload(); // 刷新页面显示新信息
+            });
+
+            // 头像上传
+            document.querySelector('[for="avatarUpload"]').addEventListener('click', () => {
+                document.getElementById('avatarUpload').click();
+            });
+
+            document.getElementById('avatarUpload').addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('avatarContainer').innerHTML = `
+                            <img src="${e.target.result}" alt="新头像" class="w-full h-full object-cover">
+                        `;
+                        document.getElementById('headerAvatar').innerHTML = `
+                            <img src="${e.target.result}" alt="新头像" class="w-full h-full object-cover">
+                        `;
+                        alert('头像预览成功，实际应用中会保存到服务器');
+                    }
+                    reader.readAsDataURL(e.target.files[0]);
+                }
+            });
+
+            // 退出登录
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                if (confirm('确定要退出登录吗？')) {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

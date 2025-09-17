@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>患者管理 - 医疗AI系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .table-hover-effect {
+                @apply hover:bg-neutral-50 transition-colors;
+            }
+            .btn-effect {
+                @apply transition-all duration-200 transform hover:-translate-y-0.5;
+            }
+        }
+    </style>
+
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #F5F7FA;
+        }
+
+        /* 表格样式 */
+        .data-table th {
+            position: relative;
+            white-space: nowrap;
+        }
+
+        /* 动画效果 */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F7FA;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C9CDD4;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #86909C;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+                    <i class="fa fa-stethoscope"></i>
+                </div>
+                <h1 class="text-lg font-bold text-neutral-600">医疗AI辅助诊断系统</h1>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- 医生信息 -->
+                <div class="flex items-center space-x-3">
+                    <div id="doctorAvatar" class="w-9 h-9 rounded-full overflow-hidden">
+                        <!-- 头像将通过JS动态设置 -->
+                    </div>
+                    <div>
+                        <p id="doctorName" class="text-sm font-medium text-neutral-600">加载中...</p>
+                        <p id="doctorRole" class="text-xs text-neutral-400">普通医生</p>
+                    </div>
+                </div>
+
+                <!-- 退出登录 -->
+                <button id="logoutBtn" class="flex items-center space-x-1 text-sm text-neutral-500 hover:text-danger transition-colors">
+                    <i class="fa fa-sign-out"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 中间内容区 -->
+    <div class="flex-1 flex container mx-auto px-4 py-6 gap-6">
+        <!-- 左侧侧边栏 -->
+        <aside class="w-56 bg-white rounded-lg shadow-sm p-4">
+            <nav class="space-y-1">
+                <a href="dashboard.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-tachometer w-5 text-center mr-2"></i>
+                    <span>工作台首页</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">核心功能</div>
+                <a href="image_upload.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-x-ray w-5 text-center mr-2"></i>
+                    <span>影像管理</span>
+                </a>
+                <a href="patient_management.html" class="flex items-center px-3 py-2.5 rounded-md text-sm bg-primary/10 text-primary border-l-4 border-primary">
+                    <i class="fa fa-user-o w-5 text-center mr-2"></i>
+                    <span>患者管理</span>
+                </a>
+                <a href="diagnosis_record.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-file-text-o w-5 text-center mr-2"></i>
+                    <span>诊断记录</span>
+                </a>
+
+                <!-- 个人信息 -->
+                <a href="personal_info.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-user-circle w-5 text-center mr-2"></i>
+                    <span>个人信息</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">系统设置</div>
+                <a href="#profile" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-cog w-5 text-center mr-2"></i>
+                    <span>个人设置</span>
+                </a>
+                <a href="#system-log" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-history w-5 text-center mr-2"></i>
+                    <span>操作日志</span>
+                </a>
+
+                <!-- 管理员菜单 -->
+                <div id="adminMenu" class="hidden mt-6">
+                    <div class="mb-2 px-3 text-xs text-neutral-400 font-medium">管理员功能</div>
+                    <a href="#doctor-manage" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                        <i class="fa fa-users w-5 text-center mr-2"></i>
+                        <span>医生管理</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 右侧主内容 -->
+        <main class="flex-1 space-y-6">
+            <!-- 页面标题和操作区 -->
+            <div class="bg-white rounded-lg shadow-sm p-5">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-neutral-600">患者管理</h2>
+                        <p class="mt-1 text-neutral-400">管理所有患者信息，包括新增、查询和删除操作</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        <!-- 搜索框 -->
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="输入患者姓名搜索..."
+                                   class="pl-10 pr-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none w-full md:w-64">
+                            <button id="searchBtn" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors">
+                                <i class="fa fa-search"></i>
+                            </button>
+                        </div>
+
+                        <!-- 新增按钮 -->
+                        <button id="addPatientBtn" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors btn-effect flex items-center">
+                            <i class="fa fa-plus mr-2"></i> 新增患者
+                        </button>
+
+                        <!-- 删除按钮 -->
+                        <button id="deletePatientBtn" class="bg-danger text-white px-4 py-2 rounded-lg hover:bg-danger/90 transition-colors btn-effect flex items-center opacity-50 cursor-not-allowed" disabled>
+                            <i class="fa fa-trash mr-2"></i> 删除选中
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 患者表格 -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm data-table">
+                        <thead>
+                            <tr class="bg-neutral-50 border-b border-neutral-200">
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium w-16">
+                                    <input type="checkbox" id="selectAll" class="rounded text-primary focus:ring-primary">
+                                </th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">患者ID</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">姓名</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">性别</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">年龄</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">联系电话</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium">注册时间</th>
+                                <th class="text-left py-3 px-4 text-neutral-500 font-medium w-20">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patientTableBody">
+                            <!-- 表格内容将通过JavaScript动态生成 -->
+                            <tr>
+                                <td colspan="8" class="py-12 text-center text-neutral-400">
+                                    <div class="flex flex-col items-center">
+                                        <i class="fa fa-user-o text-4xl mb-3 text-neutral-300"></i>
+                                        <p>暂无患者数据</p>
+                                        <button id="initAddBtn" class="mt-2 text-primary hover:underline text-sm">点击新增患者</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- 分页控件 -->
+                <div class="flex items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-50" id="paginationControls">
+                    <div class="text-sm text-neutral-500">
+                        显示 <span id="showingRange">0-0</span> 条，共 <span id="totalCount">0</span> 条
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <button id="prevPage" class="px-3 py-1 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fa fa-chevron-left text-xs"></i>
+                        </button>
+                        <span id="currentPage" class="px-3 py-1 text-neutral-600">第 1 页</span>
+                        <button id="nextPage" class="px-3 py-1 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <i class="fa fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 新增/编辑患者模态框 -->
+    <div id="patientModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden fade-in">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-md mx-4 transform transition-all">
+            <div class="px-6 py-4 border-b border-neutral-200 flex items-center justify-between">
+                <h3 id="modalTitle" class="text-lg font-medium text-neutral-600">新增患者</h3>
+                <button id="closeModal" class="text-neutral-400 hover:text-neutral-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <form id="patientForm" class="p-6 space-y-4">
+                <input type="hidden" id="patientId">
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-neutral-500 mb-1">患者姓名 <span class="text-danger">*</span></label>
+                    <input type="text" id="name" required
+                           class="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-neutral-500 mb-1">性别 <span class="text-danger">*</span></label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="gender" value="男" checked class="text-primary focus:ring-primary">
+                            <span class="ml-2 text-neutral-600">男</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="gender" value="女" class="text-primary focus:ring-primary">
+                            <span class="ml-2 text-neutral-600">女</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="age" class="block text-sm font-medium text-neutral-500 mb-1">年龄 <span class="text-danger">*</span></label>
+                    <input type="number" id="age" min="0" max="120" required
+                           class="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                </div>
+
+                <div>
+                    <label for="phone" class="block text-sm font-medium text-neutral-500 mb-1">联系电话</label>
+                    <input type="tel" id="phone" placeholder="11位手机号码"
+                           class="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                    <p class="mt-1 text-xs text-neutral-400">选填，若填写请输入11位数字</p>
+                </div>
+            </form>
+
+            <div class="px-6 py-4 border-t border-neutral-200 flex justify-end space-x-3">
+                <button id="cancelForm" class="px-4 py-2 border border-neutral-300 text-neutral-600 rounded-lg hover:bg-neutral-50 transition-colors">
+                    取消
+                </button>
+                <button id="submitForm" class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors btn-effect">
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 确认删除模态框 -->
+    <div id="confirmDeleteModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center hidden fade-in">
+        <div class="bg-white rounded-lg shadow-lg w-full max-w-sm mx-4">
+            <div class="p-6">
+                <div class="text-center mb-4">
+                    <div class="w-12 h-12 bg-danger/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="fa fa-exclamation-triangle text-danger text-xl"></i>
+                    </div>
+                    <h3 class="text-lg font-medium text-neutral-600">确认删除</h3>
+                    <p class="mt-2 text-neutral-500 text-sm">
+                        您确定要删除选中的患者吗？此操作不可撤销，相关数据将被永久删除。
+                    </p>
+                </div>
+
+                <div class="flex justify-center space-x-3 mt-6">
+                    <button id="cancelDelete" class="px-4 py-2 border border-neutral-300 text-neutral-600 rounded-lg hover:bg-neutral-50 transition-colors">
+                        取消
+                    </button>
+                    <button id="confirmDelete" class="px-4 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors btn-effect">
+                        确认删除
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提示消息组件 -->
+    <div id="toast" class="fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 flex items-center z-50"></div>
+
+    <script>
+        // API基础路径（根据实际后端地址修改）
+        const API_BASE_URL = 'http://localhost:8000/api/v1';
+        // 当前选中的患者ID
+        let selectedPatientId = null;
+        // 当前页码和分页参数
+        let currentPage = 1;
+        const pageSize = 10;
+        // 当前搜索关键词
+        let currentSearchKeyword = '';
+
+        // DOM元素
+        const elements = {
+            patientTableBody: document.getElementById('patientTableBody'),
+            addPatientBtn: document.getElementById('addPatientBtn'),
+            initAddBtn: document.getElementById('initAddBtn'),
+            deletePatientBtn: document.getElementById('deletePatientBtn'),
+            searchInput: document.getElementById('searchInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            patientModal: document.getElementById('patientModal'),
+            modalTitle: document.getElementById('modalTitle'),
+            closeModal: document.getElementById('closeModal'),
+            patientForm: document.getElementById('patientForm'),
+            cancelForm: document.getElementById('cancelForm'),
+            submitForm: document.getElementById('submitForm'),
+            confirmDeleteModal: document.getElementById('confirmDeleteModal'),
+            cancelDelete: document.getElementById('cancelDelete'),
+            confirmDelete: document.getElementById('confirmDelete'),
+            selectAll: document.getElementById('selectAll'),
+            prevPage: document.getElementById('prevPage'),
+            nextPage: document.getElementById('nextPage'),
+            currentPage: document.getElementById('currentPage'),
+            showingRange: document.getElementById('showingRange'),
+            totalCount: document.getElementById('totalCount'),
+            toast: document.getElementById('toast'),
+            doctorAvatar: document.getElementById('doctorAvatar'),
+            doctorName: document.getElementById('doctorName'),
+            doctorRole: document.getElementById('doctorRole'),
+            adminMenu: document.getElementById('adminMenu'),
+            logoutBtn: document.getElementById('logoutBtn')
+        };
+
+        // 初始化页面
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查登录状态
+            checkLoginStatus();
+
+            // 加载患者数据
+            loadPatients();
+
+            // 绑定事件监听
+            bindEvents();
+        });
+
+        // 检查登录状态
+        function checkLoginStatus() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 加载医生信息
+            loadDoctorInfo();
+        }
+
+        // 加载医生信息
+        function loadDoctorInfo() {
+            const doctorInfo = {
+                name: localStorage.getItem('doctorName'),
+                gender: localStorage.getItem('doctorGender'),
+                isAdmin: localStorage.getItem('doctorIsAdmin') === '1'
+            };
+
+            elements.doctorName.textContent = doctorInfo.name;
+            elements.doctorRole.textContent = doctorInfo.isAdmin ? '管理员' : '普通医生';
+
+            // 设置头像
+            const avatarSrc = doctorInfo.gender === '男'
+                ? 'https://picsum.photos/id/1012/200/200'
+                : 'https://picsum.photos/id/1027/200/200';
+            elements.doctorAvatar.innerHTML = `<img src="${avatarSrc}" alt="医生头像" class="w-full h-full object-cover">`;
+
+            // 显示管理员菜单
+            if (doctorInfo.isAdmin) {
+                elements.adminMenu.classList.remove('hidden');
+            }
+        }
+
+        // 绑定所有事件
+        function bindEvents() {
+            // 新增患者按钮
+            elements.addPatientBtn.addEventListener('click', () => openModal());
+            elements.initAddBtn.addEventListener('click', () => openModal());
+
+            // 关闭模态框
+            elements.closeModal.addEventListener('click', () => closeModal());
+            elements.cancelForm.addEventListener('click', () => closeModal());
+
+            // 提交表单
+            elements.submitForm.addEventListener('click', submitPatientForm);
+
+            // 搜索功能
+            elements.searchBtn.addEventListener('click', performSearch);
+            elements.searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            // 全选/取消全选
+            elements.selectAll.addEventListener('change', handleSelectAll);
+
+            // 删除相关
+            elements.deletePatientBtn.addEventListener('click', openDeleteConfirm);
+            elements.cancelDelete.addEventListener('click', closeDeleteConfirm);
+            elements.confirmDelete.addEventListener('click', confirmDeletePatient);
+
+            // 分页控制
+            elements.prevPage.addEventListener('click', goToPrevPage);
+            elements.nextPage.addEventListener('click', goToNextPage);
+
+            // 退出登录
+            elements.logoutBtn.addEventListener('click', handleLogout);
+        }
+
+        // 加载患者数据
+        async function loadPatients() {
+            try {
+                // 显示加载状态
+                elements.patientTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-neutral-400">
+                            <div class="flex flex-col items-center">
+                                <i class="fa fa-spinner fa-spin text-2xl mb-3 text-neutral-300"></i>
+                                <p>正在加载患者数据...</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                let url = `${API_BASE_URL}/patients/`;
+                const skip = (currentPage - 1) * pageSize;
+
+                // 如果有搜索关键词，使用搜索接口
+                if (currentSearchKeyword) {
+                    url = `${API_BASE_URL}/patients/search/by-name?name=${encodeURIComponent(currentSearchKeyword)}&skip=${skip}&limit=${pageSize}`;
+                } else {
+                    // 如果没有搜索关键词，这里需要后端提供获取所有患者的接口
+                    // 假设后端有一个获取所有患者的接口，带分页参数
+                    url = `${API_BASE_URL}/patients?skip=${skip}&limit=${pageSize}`;
+                }
+
+                // 添加认证头
+                const token = localStorage.getItem('token');
+                const response = await axios.get(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const patients = response.data;
+                renderPatientTable(patients);
+
+                // 更新分页信息
+                updatePagination(patients.length);
+
+            } catch (error) {
+                console.error('加载患者数据失败:', error);
+                elements.patientTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-danger">
+                            <div class="flex flex-col items-center">
+                                <i class="fa fa-exclamation-circle text-2xl mb-3"></i>
+                                <p>加载失败，请刷新页面重试</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 渲染患者表格
+        function renderPatientTable(patients) {
+            if (!patients || patients.length === 0) {
+                elements.patientTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="py-12 text-center text-neutral-400">
+                            <div class="flex flex-col items-center">
+                                <i class="fa fa-user-o text-4xl mb-3 text-neutral-300"></i>
+                                <p>${currentSearchKeyword ? `未找到姓名包含"${currentSearchKeyword}"的患者` : '暂无患者数据'}</p>
+                                <button id="emptyAddBtn" class="mt-2 text-primary hover:underline text-sm">点击新增患者</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('emptyAddBtn').addEventListener('click', () => openModal());
+                return;
+            }
+
+            // 重置选中状态
+            selectedPatientId = null;
+            elements.selectAll.checked = false;
+            updateDeleteButtonState();
+
+            // 生成表格内容
+            let html = '';
+            patients.forEach(patient => {
+                // 格式化日期
+                const formattedDate = new Date(patient.create_time).toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+
+                html += `
+                    <tr class="border-b border-neutral-100 table-hover-effect" data-id="${patient.id}">
+                        <td class="py-3 px-4">
+                            <input type="checkbox" class="patient-select rounded text-primary focus:ring-primary" data-id="${patient.id}">
+                        </td>
+                        <td class="py-3 px-4 text-neutral-600 font-medium">${patient.id}</td>
+                        <td class="py-3 px-4 text-neutral-600">${patient.name}</td>
+                        <td class="py-3 px-4 text-neutral-600">${patient.gender}</td>
+                        <td class="py-3 px-4 text-neutral-600">${patient.age}</td>
+                        <td class="py-3 px-4 text-neutral-600">${patient.phone || '-'}</td>
+                        <td class="py-3 px-4 text-neutral-500 text-sm">${formattedDate}</td>
+                        <td class="py-3 px-4">
+                            <button class="text-primary hover:text-primary/80 mr-3 view-btn" data-id="${patient.id}" title="查看">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="text-neutral-500 hover:text-neutral-700 edit-btn" data-id="${patient.id}" title="编辑">
+                                <i class="fa fa-pencil"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            elements.patientTableBody.innerHTML = html;
+
+            // 为表格行绑定事件
+            document.querySelectorAll('.patient-select').forEach(checkbox => {
+                checkbox.addEventListener('change', handleRowSelect);
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const patientId = e.currentTarget.getAttribute('data-id');
+                    await openModal(patientId);
+                });
+            });
+
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const patientId = e.currentTarget.getAttribute('data-id');
+                    await openModal(patientId, true);
+                });
+            });
+
+            // 行点击选中
+            document.querySelectorAll('#patientTableBody tr').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    // 忽略点击复选框和按钮的情况
+                    if (e.target.type === 'checkbox' || e.target.closest('button')) {
+                        return;
+                    }
+
+                    const checkbox = row.querySelector('.patient-select');
+                    checkbox.checked = !checkbox.checked;
+                    checkbox.dispatchEvent(new Event('change'));
+                });
+            });
+        }
+
+        // 更新分页控件
+        function updatePagination(currentPageCount) {
+            // 简单分页逻辑，实际项目中应根据后端返回的总数计算
+            const isFirstPage = currentPage === 1;
+            const isLastPage = currentPageCount < pageSize;
+
+            elements.prevPage.disabled = isFirstPage;
+            elements.nextPage.disabled = isLastPage;
+            elements.currentPage.textContent = `第 ${currentPage} 页`;
+
+            // 更新显示范围
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(start + currentPageCount - 1, start + pageSize - 1);
+            elements.showingRange.textContent = `${start}-${end}`;
+
+            // 这里简化处理，实际应从后端获取总数
+            elements.totalCount.textContent = end;
+        }
+
+        // 上一页
+        function goToPrevPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadPatients();
+            }
+        }
+
+        // 下一页
+        function goToNextPage() {
+            currentPage++;
+            loadPatients();
+        }
+
+        // 打开模态框
+        async function openModal(patientId = null, viewOnly = false) {
+            // 重置表单
+            elements.patientForm.reset();
+            document.getElementById('patientId').value = '';
+            elements.modalTitle.textContent = patientId ? (viewOnly ? '查看患者' : '编辑患者') : '新增患者';
+
+            // 如果是查看或编辑，加载患者信息
+            if (patientId) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await axios.get(`${API_BASE_URL}/patients/${patientId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    const patient = response.data;
+                    document.getElementById('patientId').value = patient.id;
+                    document.getElementById('name').value = patient.name;
+                    document.getElementById('age').value = patient.age;
+                    document.getElementById('phone').value = patient.phone || '';
+
+                    // 设置性别单选框
+                    document.querySelector(`input[name="gender"][value="${patient.gender}"]`).checked = true;
+
+                    // 如果是查看模式，禁用表单
+                    if (viewOnly) {
+                        document.querySelectorAll('#patientForm input').forEach(input => {
+                            input.disabled = true;
+                        });
+                        elements.submitForm.classList.add('hidden');
+                    } else {
+                        document.querySelectorAll('#patientForm input').forEach(input => {
+                            input.disabled = false;
+                        });
+                        elements.submitForm.classList.remove('hidden');
+                    }
+                } catch (error) {
+                    console.error('加载患者详情失败:', error);
+                    showToast('加载患者信息失败', 'error');
+                    return;
+                }
+            } else {
+                // 新增模式，确保表单可用
+                document.querySelectorAll('#patientForm input').forEach(input => {
+                    input.disabled = false;
+                });
+                elements.submitForm.classList.remove('hidden');
+            }
+
+            // 显示模态框
+            elements.patientModal.classList.remove('hidden');
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            elements.patientModal.classList.add('hidden');
+        }
+
+        // 提交患者表单
+        async function submitPatientForm() {
+            // 表单验证
+            const name = document.getElementById('name').value.trim();
+            const age = document.getElementById('age').value;
+            const phone = document.getElementById('phone').value.trim();
+
+            if (!name) {
+                showToast('请输入患者姓名', 'error');
+                return;
+            }
+
+            if (!age || age < 0 || age > 120) {
+                showToast('请输入有效的年龄（0-120岁）', 'error');
+                return;
+            }
+
+            if (phone && (phone.length !== 11 || !/^\d+$/.test(phone))) {
+                showToast('联系电话必须是11位数字', 'error');
+                return;
+            }
+
+            // 构建表单数据
+            const patientData = {
+                name: name,
+                gender: document.querySelector('input[name="gender"]:checked').value,
+                age: parseInt(age),
+                phone: phone || null
+            };
+
+            const patientId = document.getElementById('patientId').value;
+            const token = localStorage.getItem('token');
+
+            try {
+                if (patientId) {
+                    // 编辑患者（假设后端有PUT接口）
+                    await axios.put(`${API_BASE_URL}/patients/${patientId}`, patientData, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    showToast('患者信息更新成功', 'success');
+                } else {
+                    // 新增患者
+                    await axios.post(`${API_BASE_URL}/patients/`, patientData, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    showToast('患者添加成功', 'success');
+                }
+
+                // 关闭模态框并重新加载数据
+                closeModal();
+                currentPage = 1; // 重置到第一页
+                loadPatients();
+
+            } catch (error) {
+                console.error('提交患者数据失败:', error);
+                const errorMsg = error.response?.data?.detail || '操作失败，请重试';
+                showToast(errorMsg, 'error');
+            }
+        }
+
+        // 执行搜索
+        function performSearch() {
+            const keyword = elements.searchInput.value.trim();
+            currentSearchKeyword = keyword;
+            currentPage = 1; // 重置到第一页
+            loadPatients();
+        }
+
+        // 处理全选
+        function handleSelectAll() {
+            const isChecked = elements.selectAll.checked;
+            const checkboxes = document.querySelectorAll('.patient-select');
+
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = isChecked;
+            });
+
+            // 更新选中的患者ID
+            selectedPatientId = isChecked && checkboxes.length > 0
+                ? checkboxes[0].getAttribute('data-id')
+                : null;
+
+            updateDeleteButtonState();
+        }
+
+        // 处理行选择
+        function handleRowSelect(e) {
+            const isChecked = e.target.checked;
+            const patientId = e.target.getAttribute('data-id');
+
+            // 如果取消选中，全选框也取消
+            if (!isChecked) {
+                elements.selectAll.checked = false;
+                selectedPatientId = null;
+            } else {
+                // 如果选中，取消其他行的选中状态（只允许选一行）
+                document.querySelectorAll('.patient-select').forEach(checkbox => {
+                    if (checkbox.getAttribute('data-id') !== patientId) {
+                        checkbox.checked = false;
+                    }
+                });
+                selectedPatientId = patientId;
+            }
+
+            updateDeleteButtonState();
+        }
+
+        // 更新删除按钮状态
+        function updateDeleteButtonState() {
+            if (selectedPatientId) {
+                elements.deletePatientBtn.disabled = false;
+                elements.deletePatientBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                elements.deletePatientBtn.disabled = true;
+                elements.deletePatientBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // 打开删除确认框
+        function openDeleteConfirm() {
+            if (selectedPatientId) {
+                elements.confirmDeleteModal.classList.remove('hidden');
+            }
+        }
+
+        // 关闭删除确认框
+        function closeDeleteConfirm() {
+            elements.confirmDeleteModal.classList.add('hidden');
+        }
+
+        // 确认删除患者
+        async function confirmDeletePatient() {
+            if (!selectedPatientId) return;
+
+            try {
+                const token = localStorage.getItem('token');
+                await axios.delete(`${API_BASE_URL}/patients/${selectedPatientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                showToast('患者删除成功', 'success');
+                closeDeleteConfirm();
+                loadPatients();
+
+            } catch (error) {
+                console.error('删除患者失败:', error);
+                const errorMsg = error.response?.data?.detail || '删除失败，请重试';
+                showToast(errorMsg, 'error');
+            }
+        }
+
+        // 显示提示消息
+        function showToast(message, type = 'info') {
+            const toast = elements.toast;
+            toast.textContent = message;
+
+            // 设置样式
+            if (type === 'success') {
+                toast.classList.add('bg-success', 'text-white');
+                toast.classList.remove('bg-danger', 'text-white', 'bg-neutral-600', 'text-white');
+            } else if (type === 'error') {
+                toast.classList.add('bg-danger', 'text-white');
+                toast.classList.remove('bg-success', 'text-white', 'bg-neutral-600', 'text-white');
+            } else {
+                toast.classList.add('bg-neutral-600', 'text-white');
+                toast.classList.remove('bg-success', 'text-white', 'bg-danger', 'text-white');
+            }
+
+            // 显示
+            toast.classList.remove('translate-x-full');
+
+            // 3秒后隐藏
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+
+        // 处理退出登录
+        function handleLogout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

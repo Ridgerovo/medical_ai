@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影像详情 - 医疗AI辅助诊断系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .btn-effect {
+                @apply transition-all duration-200 transform hover:-translate-y-0.5;
+            }
+            .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+            .form-label {
+                @apply block text-sm text-neutral-500 mb-1;
+            }
+            .form-input {
+                @apply w-full p-2 border border-neutral-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary;
+            }
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #F5F7FA;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F7FA;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C9CDD4;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #86909C;
+        }
+        .image-container {
+            background: #f0f0f0;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .image-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #86909C;
+            z-index: 1;
+        }
+        .detail-image {
+            z-index: 2;
+            position: relative;
+            max-height: 70vh;
+        }
+        .analysis-result-container {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #E5E6EB;
+        }
+        .result-image-item {
+            margin-bottom: 1.5rem;
+        }
+        .result-image-item p {
+            margin-bottom: 0.5rem;
+            color: #4E5969;
+            font-size: 0.875rem;
+        }
+        .result-image-item img {
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 2rem;
+            transform: translateY(-20px);
+            transition: transform 0.3s ease;
+        }
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #E5E6EB;
+        }
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #86909C;
+            transition: color 0.2s;
+        }
+        .modal-close:hover {
+            color: #F53F3F;
+        }
+        .report-image-preview {
+            background: #F5F7FA;
+            border-radius: 6px;
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+        }
+        .report-image-preview img {
+            max-height: 100%;
+            max-width: 100%;
+            object-contain;
+        }
+        .modal-footer {
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #E5E6EB;
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+        .required-mark {
+            color: #F53F3F;
+        }
+        .tip-text {
+            @apply text-xs text-neutral-400 mt-1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+                    <i class="fa fa-stethoscope"></i>
+                </div>
+                <h1 class="text-lg font-bold text-neutral-600">医疗AI辅助诊断系统</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center">
+                        <i class="fa fa-user text-neutral-400" id="user-avatar-fallback"></i>
+                        <img id="user-avatar" src="" alt="用户头像" class="w-full h-full object-cover hidden">
+                    </div>
+                    <div>
+                        <p id="user-name" class="text-sm font-medium text-neutral-600">王建国</p>
+                        <p id="user-role" class="text-xs text-neutral-400">医生</p>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="flex items-center space-x-1 text-sm text-neutral-500 hover:text-danger transition-colors">
+                    <i class="fa fa-sign-out"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 中间内容区 -->
+    <div class="flex-1 container mx-auto px-4 py-6">
+        <div class="mb-6 flex items-center">
+            <a href="image_upload.html" class="text-neutral-500 hover:text-primary transition-colors mr-4">
+                <i class="fa fa-arrow-left"></i>
+            </a>
+            <h2 id="detail-title" class="text-xl font-bold text-neutral-600">影像详情</h2>
+        </div>
+
+        <div class="bg-white rounded-lg card-shadow p-6 md:p-8 max-w-5xl mx-auto fade-in">
+            <div class="mb-6 pb-4 border-b border-neutral-200">
+                <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                    <div>
+                        <p class="text-sm text-neutral-400">影像ID</p>
+                        <p id="image-id-display" class="text-lg font-medium text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">查看时间</p>
+                        <p id="view-time" class="text-sm text-neutral-500 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-8 image-container p-4 flex justify-center items-center min-h-[500px]">
+                <div class="image-placeholder" id="image-placeholder">
+                    <i class="fa fa-picture-o text-5xl mb-4"></i>
+                    <p class="text-neutral-400">加载影像中...</p>
+                </div>
+                <img id="detail-image" src="" alt="影像详情" class="detail-image max-w-full hidden">
+            </div>
+
+            <div class="mb-8 bg-neutral-50 p-5 rounded-lg">
+                <h3 class="text-base font-semibold mb-4 text-neutral-600">影像信息</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-neutral-400">患者ID</p>
+                        <p id="patient-id" class="text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">患者姓名</p>
+                        <p id="patient-name" class="text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">文件名称</p>
+                        <p id="file-name" class="text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">文件格式</p>
+                        <p id="file-format" class="text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">上传医生</p>
+                        <p id="doctor-name" class="text-neutral-600 mt-1"></p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-neutral-400">上传时间</p>
+                        <p id="upload-time" class="text-neutral-600 mt-1"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="analysis-result" class="analysis-result-container hidden">
+                <h3 class="text-base font-semibold mb-4 text-neutral-600 flex items-center">
+                    <i class="fa fa-bar-chart mr-2 text-primary"></i>AI分析结果
+                </h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="result-images">
+                    <!-- 分析结果图将通过JS动态插入 -->
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button id="back-btn" class="border border-neutral-300 px-5 py-2.5 rounded-lg text-neutral-600 hover:bg-neutral-50 transition-colors btn-effect">
+                    <i class="fa fa-arrow-left mr-2"></i>返回列表
+                </button>
+                <button id="import-btn" class="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors btn-effect">
+                    <i class="fa fa-cogs mr-2"></i>智能分析
+                </button>
+                <button id="generate-report-btn" class="bg-success text-white px-5 py-2.5 rounded-lg hover:bg-success/90 transition-colors btn-effect" disabled>
+                    <i class="fa fa-file-text-o mr-2"></i>生成报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 生成报告对话框：原始影像→对比图像，与分析图像统一处理 -->
+    <div id="report-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-lg font-bold text-neutral-600">生成诊断报告</h3>
+                <button id="close-modal" class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- 基础信息展示 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <p class="form-label">患者姓名</p>
+                        <p id="report-patient-name" class="text-neutral-600"></p>
+                    </div>
+                    <div>
+                        <p class="form-label">医生姓名</p>
+                        <p id="report-doctor-name" class="text-neutral-600"></p>
+                    </div>
+                    <div class="hidden">
+                        <p id="report-doctor-id"></p>
+                    </div>
+                </div>
+
+                <!-- 报告类型（必填） -->
+                <div class="mb-4">
+                    <label class="form-label">报告类型 <span class="required-mark">*</span></label>
+                    <input type="text" id="report-type" class="form-input" placeholder="请输入报告类型（如：CT、MRI、X光）" value="影像诊断报告">
+                </div>
+
+                <!-- 图像区：对比图像 + 分析图像（统一从AI结果提取） -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- 对比图像（原原始影像栏，从AI分析结果提取） -->
+                    <div>
+                        <p class="form-label">AI对比图像 <span class="required-mark">*</span></p>
+                        <div class="report-image-preview">
+                            <img id="comparison-image-preview" src="" alt="AI对比图像预览" class="hidden">
+                            <i class="fa fa-image text-neutral-300 text-4xl" id="comparison-image-placeholder"></i>
+                        </div>
+                        <p id="comparison-image-tip" class="tip-text">AI分析完成后自动填充对比图像</p>
+                    </div>
+
+                    <!-- AI分析结果图像（原逻辑不变） -->
+                    <div>
+                        <p class="form-label">AI分割结果图像 <span class="required-mark">*</span></p>
+                        <div class="report-image-preview">
+                            <img id="segmented-image-preview" src="" alt="AI分割图像预览" class="hidden">
+                            <i class="fa fa-image text-neutral-300 text-4xl" id="segmented-image-placeholder"></i>
+                        </div>
+                        <p id="segmented-image-tip" class="tip-text">AI分析完成后自动填充分割图像</p>
+                    </div>
+                </div>
+
+                <!-- 诊断结论（必填） -->
+                <div class="mb-4">
+                    <label class="form-label">诊断结论 <span class="required-mark">*</span></label>
+                    <textarea id="diagnosis-text" class="form-input min-h-[120px]" placeholder="请输入详细诊断结论（包括影像表现、AI分析结果、临床建议等）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-report-btn" class="border border-neutral-300 px-5 py-2 rounded-lg text-neutral-600 hover:bg-neutral-50 transition-colors">
+                    取消
+                </button>
+                <button id="save-report-btn" class="bg-primary text-white px-5 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                    <i class="fa fa-save mr-1"></i> 保存报告
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        const SERVER_PROJECT_ROOT = 'C:/Users/86157/PycharmProjects/medical_ai_backend';
+        // 新增：存储AI分析的对比图和分割图URL（便于报告使用）
+        let aiImages = {
+            comparison: '', // 对比图像URL
+            segmented: ''  // 分割图像URL
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            loadUserInfo();
+            parseUrlParams();
+            document.getElementById('view-time').textContent = new Date().toLocaleString('zh-CN');
+            bindEvents();
+            initModalEvents();
+        });
+
+        /**
+         * 解析URL参数，加载影像详情
+         */
+        function parseUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const imageId = params.get('id');
+            let imageSrc = params.get('src');
+            let selectedImage = null;
+
+            const imagesData = params.get('images');
+            if (imagesData) {
+                try {
+                    const images = JSON.parse(decodeURIComponent(imagesData));
+                    if (images.length > 0) {
+                        selectedImage = images[0];
+                    }
+                } catch (e) {
+                    console.error('解析影像数据失败', e);
+                    showImageError('影像数据解析失败，请重新选择');
+                }
+            } else if (imageId && imageSrc) {
+                selectedImage = { id: imageId, src: imageSrc };
+            }
+
+            if (selectedImage) {
+                loadImageDetails(selectedImage.id, selectedImage.src);
+            } else {
+                showImageError('未找到影像数据，请返回列表重新选择');
+            }
+        }
+
+        function loadImageDetails(imageId, imageSrc) {
+            document.getElementById('image-id-display').textContent = imageId;
+
+            const imgElement = document.getElementById('detail-image');
+            const placeholder = document.getElementById('image-placeholder');
+
+            let finalImageSrc = '';
+            if (imageSrc) {
+                const normalizedPath = imageSrc.replace(/\\/g, '/');
+                finalImageSrc = `${API_BASE_URL}/api/v1/medical-images/file?file_path=${encodeURIComponent(normalizedPath)}`;
+            }
+
+            imgElement.src = finalImageSrc;
+            imgElement.onload = function() {
+                placeholder.classList.add('hidden');
+                imgElement.classList.remove('hidden');
+                fetchImageMetadata(imageId);
+            };
+
+            imgElement.onerror = function() {
+                showImageError(`影像加载失败，路径：${finalImageSrc}`);
+            };
+        }
+
+        async function fetchImageMetadata(imageId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get(`${API_BASE_URL}/api/v1/medical-images/${imageId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const metadata = response.data;
+                document.getElementById('patient-id').textContent = metadata.patient_id || '未知';
+                document.getElementById('patient-name').textContent = metadata.patient_name || '未知';
+                document.getElementById('file-name').textContent = metadata.file_name || '未知';
+                document.getElementById('file-format').textContent = metadata.image_type || '未知';
+                document.getElementById('doctor-name').textContent = metadata.doctor_name || '未知';
+                document.getElementById('upload-time').textContent = metadata.import_time
+                    ? new Date(metadata.import_time).toLocaleString('zh-CN')
+                    : '未知';
+
+            } catch (error) {
+                console.error('获取影像元数据失败', error);
+                document.getElementById('patient-id').textContent = '获取失败';
+                document.getElementById('patient-name').textContent = '获取失败';
+                document.getElementById('file-name').textContent = '获取失败';
+                document.getElementById('file-format').textContent = '获取失败';
+                document.getElementById('doctor-name').textContent = '获取失败';
+                document.getElementById('upload-time').textContent = '获取失败';
+            }
+        }
+
+        function showImageError(message) {
+            const placeholder = document.getElementById('image-placeholder');
+            placeholder.innerHTML = `
+                <i class="fa fa-exclamation-circle text-5xl mb-4 text-danger"></i>
+                <p class="text-neutral-400">${message}</p>
+            `;
+        }
+
+        function loadUserInfo() {
+            const doctorInfo = {
+                id: localStorage.getItem('doctorId') || 'DOC-12345',
+                name: localStorage.getItem('doctorName') || '王建国',
+                avatar: localStorage.getItem('doctorAvatar') || '',
+                isAdmin: localStorage.getItem('doctorIsAdmin') === '1'
+            };
+
+            document.getElementById('user-name').textContent = doctorInfo.name;
+            document.getElementById('user-role').textContent = doctorInfo.isAdmin ? '管理员' : '普通医生';
+
+            const avatarImg = document.getElementById('user-avatar');
+            const avatarFallback = document.getElementById('user-avatar-fallback');
+            if (doctorInfo.avatar) {
+                avatarImg.src = doctorInfo.avatar;
+                avatarImg.classList.remove('hidden');
+                avatarFallback.classList.add('hidden');
+            } else {
+                avatarImg.classList.add('hidden');
+                avatarFallback.classList.remove('hidden');
+            }
+
+            document.getElementById('report-doctor-id').textContent = doctorInfo.id;
+        }
+
+        function getFileNameFromPath(localPath) {
+            return localPath.split('\\').pop();
+        }
+
+        function parseImageUrlToLocalPath(imageUrl) {
+            try {
+                const url = new URL(imageUrl);
+                const filePath = url.searchParams.get('file_path');
+
+                if (!filePath) {
+                    throw new Error('图片URL中未找到file_path参数');
+                }
+
+                const normalizedFilePath = filePath.replace(/\//g, '\\');
+                const localPath = `${SERVER_PROJECT_ROOT}\\${normalizedFilePath}`;
+
+                console.log('解析后的本地路径:', localPath);
+                return localPath;
+            } catch (error) {
+                console.error('解析图片URL失败:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * 绑定页面事件：重点修改AI分析结果存储逻辑（区分对比图和分割图）
+         */
+        function bindEvents() {
+            document.getElementById('back-btn').addEventListener('click', () => {
+                window.location.href = 'image_upload.html';
+            });
+
+            // 智能分析按钮：存储对比图和分割图URL
+            document.getElementById('import-btn').addEventListener('click', async () => {
+                const imageUrl = document.getElementById('detail-image').src;
+                const doctorId = localStorage.getItem('doctorId') || '';
+                const patientId = document.getElementById('patient-id').textContent;
+
+                if (!doctorId || !patientId || !imageUrl) {
+                    alert('信息不完整，请刷新页面重试');
+                    return;
+                }
+
+                const analysisBtn = document.getElementById('import-btn');
+                const reportBtn = document.getElementById('generate-report-btn');
+                const resultContainer = document.getElementById('analysis-result');
+                const resultImages = document.getElementById('result-images');
+
+                try {
+                    const imagePath = parseImageUrlToLocalPath(imageUrl);
+                    analysisBtn.disabled = true;
+                    analysisBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>分析中...';
+                    resultImages.innerHTML = '';
+                    resultContainer.classList.add('hidden');
+                    // 重置AI图像存储
+                    aiImages = { comparison: '', segmented: '' };
+
+                    // 调用AI分析接口
+                    const response = await axios.post(
+                        `${API_BASE_URL}/api/v1/analysis`,
+                        {
+                            image_path: imagePath,
+                            doctor_id: doctorId,
+                            patient_id: patientId
+                        },
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                'Content-Type': 'application/json'
+                            }
+                        }
+                    );
+
+                    const analysisData = response.data;
+                    const resultPaths = {
+                        comparison: analysisData.result_paths?.comparison || '', // 对比图路径
+                        segmented: analysisData.result_paths?.segmented || ''  // 分割图路径
+                    };
+
+                    let resultHtml = '';
+
+                    // 1. 处理对比图（优先显示，并存入aiImages）
+                    if (resultPaths.comparison) {
+                        const compFileName = getFileNameFromPath(resultPaths.comparison);
+                        const compImageUrl = `${API_BASE_URL}/api/v1/medical-images/analysis-result-image?file_name=${encodeURIComponent(compFileName)}`;
+                        aiImages.comparison = compImageUrl; // 存储对比图URL
+                        resultHtml += `
+                            <div class="result-image-item">
+                                <p>AI对比结果图</p>
+                                <img src="${compImageUrl}" alt="AI对比结果" class="w-full max-h-[400px] object-contain">
+                            </div>
+                        `;
+                    }
+
+                    // 2. 处理分割图（并存入aiImages）
+                    if (resultPaths.segmented) {
+                        const segFileName = getFileNameFromPath(resultPaths.segmented);
+                        const segImageUrl = `${API_BASE_URL}/api/v1/medical-images/analysis-result-image?file_name=${encodeURIComponent(segFileName)}`;
+                        aiImages.segmented = segImageUrl; // 存储分割图URL
+                        resultHtml += `
+                            <div class="result-image-item">
+                                <p>AI分割结果图</p>
+                                <img src="${segImageUrl}" alt="AI分割结果" class="w-full max-h-[400px] object-contain">
+                            </div>
+                        `;
+                    }
+
+                    // 显示分析结果
+                    setTimeout(() => {
+                        resultImages.innerHTML = resultHtml;
+                        resultContainer.classList.remove('hidden');
+                        reportBtn.disabled = false; // 启用生成报告按钮
+                    }, 100);
+
+                    alert('AI智能分析完成，结果已显示在下方');
+
+                } catch (error) {
+                    console.error('智能分析调用失败', error);
+                    const errorMsg = error.response?.data?.detail || '分析启动失败，请检查后端服务是否正常';
+                    alert(`智能分析错误：${errorMsg}`);
+                } finally {
+                    analysisBtn.disabled = false;
+                    analysisBtn.innerHTML = '<i class="fa fa-cogs mr-2"></i>智能分析';
+                }
+            });
+
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                if (confirm('确定要退出登录吗？退出后需重新登录')) {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        /**
+         * 初始化报告模态框：统一处理对比图和分割图
+         */
+        function initModalEvents() {
+            const modal = document.getElementById('report-modal');
+            const generateReportBtn = document.getElementById('generate-report-btn');
+            const closeModalBtn = document.getElementById('close-modal');
+            const cancelReportBtn = document.getElementById('cancel-report-btn');
+            const saveReportBtn = document.getElementById('save-report-btn');
+
+            // 打开模态框：自动填充AI对比图和分割图
+            generateReportBtn.addEventListener('click', () => {
+                // 1. 填充基础信息
+                document.getElementById('report-patient-name').textContent = document.getElementById('patient-name').textContent;
+                document.getElementById('report-doctor-name').textContent = document.getElementById('doctor-name').textContent;
+                document.getElementById('report-doctor-id').textContent = localStorage.getItem('doctorId') || '未知';
+                document.getElementById('report-type').value = '影像诊断报告';
+
+                // 2. 填充AI对比图（原原始影像栏）
+                const comparisonPreview = document.getElementById('comparison-image-preview');
+                const comparisonPlaceholder = document.getElementById('comparison-image-placeholder');
+                const comparisonTip = document.getElementById('comparison-image-tip');
+                if (aiImages.comparison) {
+                    comparisonPreview.src = aiImages.comparison;
+                    comparisonPreview.classList.remove('hidden');
+                    comparisonPlaceholder.classList.add('hidden');
+                    // 提取文件名显示
+                    const urlParams = new URLSearchParams(new URL(aiImages.comparison).search);
+                    const fileName = urlParams.get('file_name') || '对比图像';
+                    comparisonTip.textContent = `已自动填充AI对比图像：${fileName}`;
+                } else {
+                    comparisonPreview.src = '';
+                    comparisonPreview.classList.add('hidden');
+                    comparisonPlaceholder.classList.remove('hidden');
+                    comparisonTip.textContent = '未找到AI对比图像，请重新运行AI分析';
+                }
+
+                // 3. 填充AI分割图（原分析图像栏）
+                const segmentedPreview = document.getElementById('segmented-image-preview');
+                const segmentedPlaceholder = document.getElementById('segmented-image-placeholder');
+                const segmentedTip = document.getElementById('segmented-image-tip');
+                if (aiImages.segmented) {
+                    segmentedPreview.src = aiImages.segmented;
+                    segmentedPreview.classList.remove('hidden');
+                    segmentedPlaceholder.classList.add('hidden');
+                    const urlParams = new URLSearchParams(new URL(aiImages.segmented).search);
+                    const fileName = urlParams.get('file_name') || '分割图像';
+                    segmentedTip.textContent = `已自动填充AI分割图像：${fileName}`;
+                } else {
+                    segmentedPreview.src = '';
+                    segmentedPreview.classList.add('hidden');
+                    segmentedPlaceholder.classList.remove('hidden');
+                    segmentedTip.textContent = '未找到AI分割图像，请重新运行AI分析';
+                }
+
+                // 显示模态框
+                modal.classList.add('active');
+            });
+
+            // 关闭模态框
+            const closeModal = () => {
+                modal.classList.remove('active');
+                document.getElementById('diagnosis-text').value = '';
+            };
+            closeModalBtn.addEventListener('click', closeModal);
+            cancelReportBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => e.target === modal && closeModal());
+            document.addEventListener('keydown', (e) => e.key === 'Escape' && modal.classList.contains('active') && closeModal());
+
+            // 保存报告：统一处理对比图和分割图（URL→File）
+            saveReportBtn.addEventListener('click', async () => {
+                try {
+                    // 1. 获取表单数据
+                    const doctorId = document.getElementById('report-doctor-id').textContent.trim();
+                    const doctorName = document.getElementById('report-doctor-name').textContent.trim();
+                    const patientName = document.getElementById('report-patient-name').textContent.trim();
+                    const reportType = document.getElementById('report-type').value.trim();
+                    const description = document.getElementById('diagnosis-text').value.trim();
+
+                    // 2. 前端验证（AI图像+文字信息）
+                    const errors = [];
+                    if (!aiImages.comparison) errors.push('未找到AI对比图像，请重新运行AI分析');
+                    if (!aiImages.segmented) errors.push('未找到AI分割图像，请重新运行AI分析');
+                    if (!doctorId) errors.push('医生ID不能为空');
+                    if (!doctorName) errors.push('医生姓名不能为空');
+                    if (!patientName) errors.push('患者姓名不能为空');
+                    if (!reportType) errors.push('报告类型不能为空（如：CT/MRI）');
+                    if (!description) errors.push('诊断结论描述不能为空');
+
+                    if (errors.length > 0) {
+                        alert(`提交失败：\n${errors.join('\n')}`);
+                        return;
+                    }
+
+                    // 3. 统一转换AI图像为File对象（对比图+分割图）
+                    // 3.1 对比图：URL→File
+                    const comparisonBlob = await fetch(aiImages.comparison).then(res => {
+                        if (!res.ok) throw new Error('AI对比图像下载失败');
+                        return res.blob();
+                    });
+                    const comparisonUrlParams = new URLSearchParams(new URL(aiImages.comparison).search);
+                    const comparisonFileName = comparisonUrlParams.get('file_name') || `comparison_${Date.now()}.png`;
+                    const comparisonFile = new File([comparisonBlob], comparisonFileName, { type: comparisonBlob.type });
+
+                    // 3.2 分割图：URL→File
+                    const segmentedBlob = await fetch(aiImages.segmented).then(res => {
+                        if (!res.ok) throw new Error('AI分割图像下载失败');
+                        return res.blob();
+                    });
+                    const segmentedUrlParams = new URLSearchParams(new URL(aiImages.segmented).search);
+                    const segmentedFileName = segmentedUrlParams.get('file_name') || `segmented_${Date.now()}.png`;
+                    const segmentedFile = new File([segmentedBlob], segmentedFileName, { type: segmentedBlob.type });
+
+                    // 4. 构建FormData（与后端字段匹配：original_image=对比图，analyzed_image=分割图）
+                    const formData = new FormData();
+                    formData.append('original_image', comparisonFile); // 对比图作为原始影像参数
+                    formData.append('analyzed_image', segmentedFile);  // 分割图作为分析影像参数
+                    formData.append('doctor_id', doctorId);
+                    formData.append('doctor_name', doctorName);
+                    formData.append('patient_name', patientName);
+                    formData.append('report_type', reportType);
+                    formData.append('description', description);
+                    formData.append('report_status', 0);
+
+                    // 5. 提交请求
+                    saveReportBtn.disabled = true;
+                    saveReportBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> 保存中...';
+
+                    const response = await axios.post(
+                        `${API_BASE_URL}/api/v1/reports/upload`,
+                        formData,
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            }
+                        }
+                    );
+
+                    // 6. 成功处理
+                    if (response.data) {
+                        alert(`报告保存成功！\n报告ID：${response.data.report_id}\n报告类型：${response.data.report_type}\n报告状态：正常（0）`);
+                        closeModal();
+                    }
+                } catch (error) {
+                    // 7. 错误处理
+                    console.error('报告保存失败', error);
+                    const errorMsg = error.response?.data?.detail || error.message || '未知错误';
+                    alert(`保存失败：\n${errorMsg}`);
+                } finally {
+                    saveReportBtn.disabled = false;
+                    saveReportBtn.innerHTML = '<i class="fa fa-save mr-1"></i> 保存报告';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

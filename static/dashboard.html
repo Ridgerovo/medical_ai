@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医疗AI系统 - 医生工作台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-hover {
+                @apply hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1;
+            }
+            .menu-active {
+                @apply bg-primary/10 text-primary border-l-4 border-primary;
+            }
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background-color: #F5F7FA;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F7FA;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C9CDD4;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+                    <i class="fa fa-stethoscope"></i>
+                </div>
+                <h1 class="text-lg font-bold text-neutral-600">医疗AI辅助诊断系统</h1>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <!-- 医生信息 -->
+                <div class="flex items-center space-x-3">
+                    <div id="doctorAvatar" class="w-9 h-9 rounded-full overflow-hidden">
+                        <!-- 头像将通过JS动态设置 -->
+                    </div>
+                    <div>
+                        <p id="doctorName" class="text-sm font-medium text-neutral-600">加载中...</p>
+                        <p id="doctorRole" class="text-xs text-neutral-400">普通医生</p>
+                    </div>
+                </div>
+
+                <!-- 退出登录 -->
+                <button id="logoutBtn" class="flex items-center space-x-1 text-sm text-neutral-500 hover:text-danger transition-colors">
+                    <i class="fa fa-sign-out"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 中间内容区 -->
+    <div class="flex-1 flex container mx-auto px-4 py-6 gap-6">
+        <!-- 左侧侧边栏 -->
+        <aside class="w-56 bg-white rounded-lg shadow-sm p-4">
+            <nav class="space-y-1">
+                <a href="#" class="flex items-center px-3 py-2.5 rounded-md text-sm menu-active">
+                    <i class="fa fa-tachometer w-5 text-center mr-2"></i>
+                    <span>工作台首页</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">核心功能</div>
+                <a href="image_upload.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-x-ray w-5 text-center mr-2"></i>
+                    <span>影像管理</span>
+                </a>
+
+                <!-- 患者管理 -->
+                <a href="patient_management.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-user-o w-5 text-center mr-2"></i>
+                    <span>患者管理</span>
+                </a>
+
+
+                <a href="#diagnosis-record" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-file-text-o w-5 text-center mr-2"></i>
+                    <span>诊断记录</span>
+                </a>
+
+                <!-- 个人信息 -->
+                <a href="personal_info.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-user-circle w-5 text-center mr-2"></i>
+                    <span>个人信息</span>
+                </a>
+
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">系统设置</div>
+                <a href="#profile" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-cog w-5 text-center mr-2"></i>
+                    <span>个人设置</span>
+                </a>
+                <a href="#system-log" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-history w-5 text-center mr-2"></i>
+                    <span>操作日志</span>
+                </a>
+
+                <!-- 管理员菜单 -->
+                <div id="adminMenu" class="hidden mt-6">
+                    <div class="mb-2 px-3 text-xs text-neutral-400 font-medium">管理员功能</div>
+                    <a href="#doctor-manage" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                        <i class="fa fa-users w-5 text-center mr-2"></i>
+                        <span>医生管理</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- 右侧主内容 -->
+        <main class="flex-1 space-y-6">
+            <!-- 欢迎信息 -->
+            <div class="bg-white rounded-lg shadow-sm p-5">
+                <h2 class="text-xl font-bold text-neutral-600">欢迎回来，<span id="welcomeName">医生</span>！</h2>
+                <p class="mt-1 text-neutral-400" id="currentDate"></p>
+            </div>
+
+            <!-- 数据概览 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white rounded-lg shadow-sm p-5 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-neutral-400">累计影像数</p>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">1,352</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-x-ray"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-5 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-neutral-400">累计患者数</p>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">896</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                            <i class="fa fa-user-o"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-5 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-neutral-400">已完成诊断</p>
+                            <h3 class="text-2xl font-bold text-neutral-600 mt-2">1,024</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-success/10 rounded-full flex items-center justify-center text-success">
+                            <i class="fa fa-check-circle-o"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-5 card-hover">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-neutral-400">待处理任务</p>
+                            <h3 class="text-2xl font-bold text-danger mt-2">3</h3>
+                        </div>
+                        <div class="w-10 h-10 bg-danger/10 rounded-full flex items-center justify-center text-danger">
+                            <i class="fa fa-clock-o"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快捷功能 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <a href="image_upload.html" class="bg-white rounded-lg shadow-sm p-5 flex flex-col items-center justify-center text-center card-hover">
+                    <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
+                        <i class="fa fa-upload text-2xl"></i>
+                    </div>
+                    <h3 class="font-medium text-neutral-600">影像上传</h3>
+                    <p class="mt-1 text-sm text-neutral-400">上传本地/PACS影像</p>
+                </a>
+
+                <a href="my_diagnosis.html" class="bg-white rounded-lg shadow-sm p-5 flex flex-col items-center justify-center text-center card-hover">
+                    <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
+                        <i class="fa fa-stethoscope text-2xl"></i>
+                    </div>
+                    <h3 class="font-medium text-neutral-600">我的诊断</h3>
+                    <p class="mt-1 text-sm text-neutral-400">查看/编辑诊断记录</p>
+                </a>
+
+                <a href="patient_management.html" class="bg-white rounded-lg shadow-sm p-5 flex flex-col items-center justify-center text-center card-hover">
+                    <div class="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center text-primary mb-4">
+                        <i class="fa fa-list text-2xl"></i>
+                    </div>
+                    <h3 class="font-medium text-neutral-600">患者列表</h3>
+                    <p class="mt-1 text-sm text-neutral-400">管理患者基本信息</p>
+                </a>
+            </div>
+
+            <!-- 最近诊断记录 -->
+            <div class="bg-white rounded-lg shadow-sm p-5">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-medium text-neutral-600">最近诊断记录</h3>
+                    <a href="#all-records" class="text-sm text-primary hover:underline">查看全部</a>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-neutral-200">
+                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">患者姓名</th>
+                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">影像类型</th>
+                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">诊断时间</th>
+                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">状态</th>
+                                <th class="text-left py-3 px-2 text-neutral-400 font-normal">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="border-b border-neutral-100 hover:bg-neutral-50">
+                                <td class="py-3 px-2 text-neutral-600">王某某</td>
+                                <td class="py-3 px-2 text-neutral-600">胸部CT</td>
+                                <td class="py-3 px-2 text-neutral-400">2024-05-20 09:30</td>
+                                <td class="py-3 px-2"><span class="px-2 py-1 bg-success/10 text-success rounded-full text-xs">已完成</span></td>
+                                <td class="py-3 px-2">
+                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
+                                </td>
+                            </tr>
+                            <tr class="border-b border-neutral-100 hover:bg-neutral-50">
+                                <td class="py-3 px-2 text-neutral-600">李某某</td>
+                                <td class="py-3 px-2 text-neutral-600">头部MRI</td>
+                                <td class="py-3 px-2 text-neutral-400">2024-05-19 14:15</td>
+                                <td class="py-3 px-2"><span class="px-2 py-1 bg-success/10 text-success rounded-full text-xs">已完成</span></td>
+                                <td class="py-3 px-2">
+                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-neutral-50">
+                                <td class="py-3 px-2 text-neutral-600">张某某</td>
+                                <td class="py-3 px-2 text-neutral-600">腹部超声</td>
+                                <td class="py-3 px-2 text-neutral-400">2024-05-18 16:40</td>
+                                <td class="py-3 px-2"><span class="px-2 py-1 bg-yellow-100 text-yellow-600 rounded-full text-xs">待审核</span></td>
+                                <td class="py-3 px-2">
+                                    <a href="#" class="text-primary hover:text-primary/80">查看</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 页面加载时验证登录状态并加载用户信息
+        document.addEventListener('DOMContentLoaded', () => {
+            // 检查是否已登录
+            if (!localStorage.getItem('token')) {
+                // 未登录，跳转到登录页
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 从localStorage获取医生信息
+            const doctorInfo = {
+                id: localStorage.getItem('doctorId'),
+                name: localStorage.getItem('doctorName'),
+                gender: localStorage.getItem('doctorGender'),
+                age: localStorage.getItem('doctorAge'),
+                isAdmin: localStorage.getItem('doctorIsAdmin') === '1'
+            };
+
+            // 填充页面信息
+            document.getElementById('doctorName').textContent = doctorInfo.name;
+            document.getElementById('welcomeName').textContent = doctorInfo.name;
+            document.getElementById('doctorRole').textContent = doctorInfo.isAdmin ? '管理员' : '普通医生';
+
+            // 显示当前日期
+            const now = new Date();
+            const options = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
+            document.getElementById('currentDate').textContent = now.toLocaleDateString('zh-CN', options);
+
+            // 设置头像（根据性别）
+            const avatarSrc = doctorInfo.gender === '男'
+                ? 'https://picsum.photos/id/1012/200/200'  // 男医生卡通头像
+                : 'https://picsum.photos/id/1027/200/200'; // 女医生卡通头像
+            document.getElementById('doctorAvatar').innerHTML = `
+                <img src="${avatarSrc}" alt="${doctorInfo.gender}医生头像" class="w-full h-full object-cover">
+            `;
+
+            // 如果是管理员，显示管理员菜单
+            if (doctorInfo.isAdmin) {
+                document.getElementById('adminMenu').classList.remove('hidden');
+            }
+
+            // 退出登录功能
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                if (confirm('确定要退出登录吗？')) {
+                    // 清除登录状态
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('doctorId');
+                    localStorage.removeItem('doctorName');
+                    localStorage.removeItem('doctorGender');
+                    localStorage.removeItem('doctorAge');
+                    localStorage.removeItem('doctorIsAdmin');
+
+                    // 跳转到登录页
+                    window.location.href = 'login.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

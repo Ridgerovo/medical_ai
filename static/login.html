@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>医生登录/注册 - 医疗AI系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .input-focus {
+                @apply focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none;
+            }
+            .tab-active {
+                @apply text-primary border-primary font-medium;
+            }
+        }
+    </style>
+</head>
+<body class="bg-neutral-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-xs">
+        <!-- 登录注册卡片 -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <!-- 顶部图案区域 -->
+            <div class="bg-primary p-6 text-center">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa fa-user-md text-white text-xl"></i>
+                </div>
+                <h2 class="text-white text-xl font-bold">医疗AI辅助诊断系统</h2>
+            </div>
+
+            <!-- 标签切换 -->
+            <div class="flex border-b border-neutral-200">
+                <button id="loginTab" class="flex-1 py-4 px-6 text-center border-b-2 tab-active transition-colors">
+                    <i class="fa fa-sign-in mr-2"></i>登录
+                </button>
+                <button id="registerTab" class="flex-1 py-4 px-6 text-center border-b-2 border-transparent text-neutral-500 hover:text-neutral-700 transition-colors">
+                    <i class="fa fa-user-plus mr-2"></i>注册
+                </button>
+            </div>
+
+            <!-- 登录表单 -->
+            <div id="loginFormContainer" class="p-6 md:p-8">
+                <form id="loginForm" class="space-y-4">
+                    <!-- 工号 -->
+                    <div>
+                        <label for="loginEmployeeId" class="block text-sm font-medium text-neutral-500 mb-1">医生工号</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-id-card-o"></i>
+                            </div>
+                            <input type="text" id="loginEmployeeId"
+                                   class="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入8位工号" maxlength="8">
+                        </div>
+                        <p id="loginEmployeeIdError" class="mt-1 text-danger text-xs hidden">请输入8位数字工号</p>
+                    </div>
+
+                    <!-- 密码 -->
+                    <div>
+                        <label for="loginPassword" class="block text-sm font-medium text-neutral-500 mb-1">密码</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                            <input type="password" id="loginPassword"
+                                   class="w-full pl-10 pr-10 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入密码">
+                            <button type="button" id="toggleLoginPwd" class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <p id="loginPasswordError" class="mt-1 text-danger text-xs hidden">密码不能为空</p>
+                    </div>
+
+                    <!-- 登录按钮 -->
+                    <button type="submit" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm flex items-center justify-center">
+                        <i class="fa fa-sign-in mr-2"></i> 登录系统
+                    </button>
+                </form>
+            </div>
+
+            <!-- 注册表单 -->
+            <div id="registerFormContainer" class="p-6 md:p-8 hidden">
+                <form id="registerForm" class="space-y-4">
+                    <!-- 工号 -->
+                    <div>
+                        <label for="regEmployeeId" class="block text-sm font-medium text-neutral-500 mb-1">医生工号</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-id-card-o"></i>
+                            </div>
+                            <input type="text" id="regEmployeeId"
+                                   class="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入8位工号" maxlength="8">
+                        </div>
+                        <p id="regEmployeeIdError" class="mt-1 text-danger text-xs hidden">请输入8位数字工号</p>
+                    </div>
+
+                    <!-- 姓名 -->
+                    <div>
+                        <label for="regName" class="block text-sm font-medium text-neutral-500 mb-1">姓名</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-user"></i>
+                            </div>
+                            <input type="text" id="regName"
+                                   class="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入姓名">
+                        </div>
+                        <p id="regNameError" class="mt-1 text-danger text-xs hidden">姓名不能为空</p>
+                    </div>
+
+                    <!-- 性别 -->
+                    <div>
+                        <label class="block text-sm font-medium text-neutral-500 mb-1">性别</label>
+                        <div class="flex space-x-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="gender" value="男" class="text-primary focus:ring-primary" checked>
+                                <span class="ml-2 text-neutral-600">男</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="gender" value="女" class="text-primary focus:ring-primary">
+                                <span class="ml-2 text-neutral-600">女</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 年龄 -->
+                    <div>
+                        <label for="regAge" class="block text-sm font-medium text-neutral-500 mb-1">年龄</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-calendar"></i>
+                            </div>
+                            <input type="number" id="regAge"
+                                   class="w-full pl-10 pr-4 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入年龄" min="22" max="65">
+                        </div>
+                        <p id="regAgeError" class="mt-1 text-danger text-xs hidden">年龄必须在22-65岁之间</p>
+                    </div>
+
+                    <!-- 密码 -->
+                    <div>
+                        <label for="regPassword" class="block text-sm font-medium text-neutral-500 mb-1">密码</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
+                                <i class="fa fa-lock"></i>
+                            </div>
+                            <input type="password" id="regPassword"
+                                   class="w-full pl-10 pr-10 py-2 border border-neutral-200 rounded-lg input-focus"
+                                   placeholder="请输入至少6位密码">
+                            <button type="button" id="toggleRegPwd" class="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600">
+                                <i class="fa fa-eye-slash"></i>
+                            </button>
+                        </div>
+                        <p id="regPasswordError" class="mt-1 text-danger text-xs hidden">密码至少6位</p>
+                    </div>
+
+                    <!-- 注册按钮 -->
+                    <button type="submit" class="w-full bg-primary text-white py-2.5 rounded-lg hover:bg-primary/90 transition-colors font-medium text-sm flex items-center justify-center">
+                        <i class="fa fa-user-plus mr-2"></i> 注册账号
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- 底部版权 -->
+        <p class="text-center text-xs text-neutral-400 mt-6">© 2024 医疗AI辅助诊断系统</p>
+    </div>
+
+    <script>
+        // DOM元素
+        const loginTab = document.getElementById('loginTab');
+        const registerTab = document.getElementById('registerTab');
+        const loginFormContainer = document.getElementById('loginFormContainer');
+        const registerFormContainer = document.getElementById('registerFormContainer');
+        const loginForm = document.getElementById('loginForm');
+        const registerForm = document.getElementById('registerForm');
+
+        // 登录表单元素
+        const loginEmployeeId = document.getElementById('loginEmployeeId');
+        const loginPassword = document.getElementById('loginPassword');
+        const toggleLoginPwd = document.getElementById('toggleLoginPwd');
+        const loginEmployeeIdError = document.getElementById('loginEmployeeIdError');
+        const loginPasswordError = document.getElementById('loginPasswordError');
+
+        // 注册表单元素
+        const regEmployeeId = document.getElementById('regEmployeeId');
+        const regName = document.getElementById('regName');
+        const regAge = document.getElementById('regAge');
+        const regPassword = document.getElementById('regPassword');
+        const toggleRegPwd = document.getElementById('toggleRegPwd');
+        const regEmployeeIdError = document.getElementById('regEmployeeIdError');
+        const regNameError = document.getElementById('regNameError');
+        const regAgeError = document.getElementById('regAgeError');
+        const regPasswordError = document.getElementById('regPasswordError');
+
+        // 切换标签
+        loginTab.addEventListener('click', () => {
+            loginTab.classList.add('tab-active');
+            registerTab.classList.remove('tab-active');
+            registerTab.classList.add('text-neutral-500');
+            loginFormContainer.classList.remove('hidden');
+            registerFormContainer.classList.add('hidden');
+        });
+
+        registerTab.addEventListener('click', () => {
+            registerTab.classList.add('tab-active');
+            loginTab.classList.remove('tab-active');
+            loginTab.classList.add('text-neutral-500');
+            registerFormContainer.classList.remove('hidden');
+            loginFormContainer.classList.add('hidden');
+        });
+
+        // 切换密码可见性
+        toggleLoginPwd.addEventListener('click', () => {
+            togglePasswordVisibility(loginPassword, toggleLoginPwd);
+        });
+
+        toggleRegPwd.addEventListener('click', () => {
+            togglePasswordVisibility(regPassword, toggleRegPwd);
+        });
+
+        function togglePasswordVisibility(passwordInput, toggleBtn) {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            toggleBtn.innerHTML = type === 'password' ? '<i class="fa fa-eye-slash"></i>' : '<i class="fa fa-eye"></i>';
+        }
+
+        // 登录表单验证
+        function validateLoginForm() {
+            let isValid = true;
+
+            // 验证工号
+            if (!loginEmployeeId.value || loginEmployeeId.value.length !== 8 || isNaN(loginEmployeeId.value)) {
+                loginEmployeeIdError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                loginEmployeeIdError.classList.add('hidden');
+            }
+
+            // 验证密码
+            if (!loginPassword.value) {
+                loginPasswordError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                loginPasswordError.classList.add('hidden');
+            }
+
+            return isValid;
+        }
+
+        // 注册表单验证
+        function validateRegisterForm() {
+            let isValid = true;
+
+            // 验证工号
+            if (!regEmployeeId.value || regEmployeeId.value.length !== 8 || isNaN(regEmployeeId.value)) {
+                regEmployeeIdError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                regEmployeeIdError.classList.add('hidden');
+            }
+
+            // 验证姓名
+            if (!regName.value.trim()) {
+                regNameError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                regNameError.classList.add('hidden');
+            }
+
+            // 验证年龄
+            const age = parseInt(regAge.value);
+            if (!regAge.value || age < 22 || age > 65 || isNaN(age)) {
+                regAgeError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                regAgeError.classList.add('hidden');
+            }
+
+            // 验证密码
+            if (!regPassword.value || regPassword.value.length < 6) {
+                regPasswordError.classList.remove('hidden');
+                isValid = false;
+            } else {
+                regPasswordError.classList.add('hidden');
+            }
+
+            return isValid;
+        }
+
+        // 登录处理
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateLoginForm()) return;
+
+            try {
+                // 调用登录API
+                const response = await fetch('/api/v1/doctor/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        employee_id: loginEmployeeId.value,
+                        password: loginPassword.value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || '登录失败，请检查工号和密码');
+                }
+
+                // 登录成功：存储用户信息到localStorage
+                localStorage.setItem('token', 'token_' + Date.now()); // 实际项目中使用接口返回的token
+                localStorage.setItem('doctorId', data.data.doctor_id);
+                localStorage.setItem('doctorName', data.data.name);
+                localStorage.setItem('doctorIsAdmin', data.data.is_admin);
+
+                // 显示登录成功提示
+                const formContainer = loginForm.parentElement;
+                formContainer.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa fa-check text-success text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-neutral-600">登录成功</h3>
+                        <p class="text-neutral-400 text-sm mt-2">欢迎回来，${data.data.name}医生</p>
+                        <p class="text-neutral-300 text-xs mt-6">正在进入系统...</p>
+                    </div>
+                `;
+
+                // 2秒后跳转到系统首页
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 2000);
+
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // 注册处理
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateRegisterForm()) return;
+
+            // 获取选中的性别
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+
+            try {
+                // 调用注册API
+                const response = await fetch('/api/v1/doctor/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        employee_id: regEmployeeId.value,
+                        password: regPassword.value,
+                        name: regName.value.trim(),
+                        gender: gender,
+                        age: parseInt(regAge.value),
+                        is_admin: 0 // 默认不是管理员
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || '注册失败，请检查输入信息');
+                }
+
+                // 注册成功提示
+                const formContainer = registerForm.parentElement;
+                formContainer.innerHTML = `
+                    <div class="text-center py-6">
+                        <div class="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa fa-check text-success text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-neutral-600">注册成功</h3>
+                        <p class="text-neutral-400 text-sm mt-2">账号已创建，请登录系统</p>
+                        <button id="switchToLogin" class="mt-4 text-primary hover:underline text-sm">
+                            立即登录
+                        </button>
+                    </div>
+                `;
+
+                // 切换到登录标签
+                document.getElementById('switchToLogin').addEventListener('click', () => {
+                    loginTab.click();
+                });
+
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // 输入时实时验证
+        loginEmployeeId.addEventListener('input', validateLoginForm);
+        loginPassword.addEventListener('input', validateLoginForm);
+        regEmployeeId.addEventListener('input', validateRegisterForm);
+        regName.addEventListener('input', validateRegisterForm);
+        regAge.addEventListener('input', validateRegisterForm);
+        regPassword.addEventListener('input', validateRegisterForm);
+    </script>
+</body>
+</html>

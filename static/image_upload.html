@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>影像上传 - 医疗AI辅助诊断系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        success: '#00B42A',
+                        danger: '#F53F3F',
+                        neutral: {
+                            100: '#F5F7FA',
+                            200: '#E5E6EB',
+                            300: '#C9CDD4',
+                            400: '#86909C',
+                            500: '#4E5969',
+                            600: '#272E3B',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style type="text/tailwindcss">
+        @layer utilities {
+           .content-auto {
+                content-visibility: auto;
+            }
+           .table-hover-effect {
+                @apply hover:bg-neutral-50 transition-colors;
+            }
+           .btn-effect {
+                @apply transition-all duration-200 transform hover:-translate-y-0.5;
+            }
+           .card-shadow {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            }
+        }
+    </style>
+
+    <style>
+        /* 基础样式 */
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: #F5F7FA;
+        }
+        /* 动画效果 */
+       .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F5F7FA;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #C9CDD4;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #86909C;
+        }
+        /* 上传区域样式 */
+       .upload-area {
+            border: 2px dashed #E5E6EB;
+            transition: all 0.3s ease;
+        }
+       .upload-area:hover {
+            border-color: #165DFF;
+            background-color: rgba(22, 93, 255, 0.03);
+        }
+        /* 模态框动画 */
+       .modal-enter {
+            animation: modalFadeIn 0.3s ease-out;
+        }
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- 顶部导航栏 -->
+    <header class="bg-white shadow-sm sticky top-0 z-30">
+        <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 bg-primary rounded-md flex items-center justify-center text-white">
+                    <i class="fa fa-stethoscope"></i>
+                </div>
+                <h1 class="text-lg font-bold text-neutral-600">医疗AI辅助诊断系统</h1>
+            </div>
+            <div class="flex items-center space-x-6">
+                <!-- 登录用户信息 - 从localStorage动态获取 -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-full overflow-hidden">
+                        <img id="user-avatar" src="" alt="用户头像" class="w-full h-full object-cover">
+                    </div>
+                    <div>
+                        <p id="user-name" class="text-sm font-medium text-neutral-600">加载中...</p>
+                        <p id="user-role" class="text-xs text-neutral-400">加载中...</p>
+                    </div>
+                </div>
+                <!-- 退出登录 -->
+                <button id="logoutBtn" class="flex items-center space-x-1 text-sm text-neutral-500 hover:text-danger transition-colors">
+                    <i class="fa fa-sign-out"></i>
+                    <span>退出登录</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <!-- 中间内容区 -->
+    <div class="flex-1 flex container mx-auto px-4 py-6 gap-6">
+        <!-- 左侧侧边栏 -->
+        <aside class="w-56 bg-white rounded-lg shadow-sm p-4">
+            <nav class="space-y-1">
+                <a href="dashboard.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-tachometer w-5 text-center mr-2"></i>
+                    <span>工作台首页</span>
+                </a>
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">核心功能</div>
+                <a href="image_upload.html" class="flex items-center px-3 py-2.5 rounded-md text-sm bg-primary/10 text-primary border-l-4 border-primary">
+                    <i class="fa fa-x-ray w-5 text-center mr-2"></i>
+                    <span>影像管理</span>
+                </a>
+                <a href="patient_management.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-user-o w-5 text-center mr-2"></i>
+                    <span>患者管理</span>
+                </a>
+                <a href="diagnosis_record.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-file-text-o w-5 text-center mr-2"></i>
+                    <span>诊断记录</span>
+                </a>
+                <!-- 个人信息 -->
+                <a href="personal_info.html" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-user-circle w-5 text-center mr-2"></i>
+                    <span>个人信息</span>
+                </a>
+                <div class="mt-6 mb-2 px-3 text-xs text-neutral-400 font-medium">系统设置</div>
+                <a href="#profile" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-cog w-5 text-center mr-2"></i>
+                    <span>个人设置</span>
+                </a>
+                <a href="#system-log" class="flex items-center px-3 py-2.5 rounded-md text-sm text-neutral-500 hover:bg-neutral-100 transition-colors">
+                    <i class="fa fa-history w-5 text-center mr-2"></i>
+                    <span>操作日志</span>
+                </a>
+            </nav>
+        </aside>
+        <!-- 右侧主内容 - 占据全部剩余空间 -->
+        <main class="flex-1 space-y-6">
+            <!-- 页面标题和说明 -->
+            <div class="bg-white rounded-lg shadow-sm p-5">
+                <h2 class="text-xl font-bold text-neutral-600">影像上传</h2>
+                <p class="mt-1 text-neutral-400">支持PACS数据库导入与本地文件手动上传，上传后可进行AI辅助诊断</p>
+            </div>
+            <!-- 上传模式切换标签 -->
+            <div class="bg-white rounded-lg shadow-sm p-1 inline-flex">
+                <button class="tab-btn active px-5 py-2.5 rounded-md text-sm font-medium text-primary bg-primary/10 transition-colors" data-tab="pacs-import">
+                    <i class="fa fa-database mr-2"></i>PACS数据库导入
+                </button>
+                <button class="tab-btn px-5 py-2.5 rounded-md text-sm font-medium text-neutral-500 hover:bg-neutral-100 transition-colors" data-tab="local-upload">
+                    <i class="fa fa-file-image-o mr-2"></i>本地文件上传
+                </button>
+            </div>
+            <!-- 上传操作区 -->
+            <div class="space-y-6">
+                <!-- 1. PACS数据库导入标签内容 -->
+                <div class="tab-content active" id="pacs-import">
+                    <div class="bg-white rounded-lg shadow-sm p-5">
+                        <h3 class="text-base font-semibold mb-4 flex items-center text-neutral-600">
+                            <i class="fa fa-database text-primary mr-2"></i>PACS数据库影像列表（medical_image表）
+                        </h3>
+                        <!-- 搜索与筛选 -->
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
+                            <div class="relative w-full sm:w-64">
+                                <input type="text" id="searchInput" placeholder="搜索患者ID/影像ID/文件名"
+                                       class="pl-10 pr-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none w-full">
+                                <button id="searchBtn" class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-primary transition-colors">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm text-neutral-500">筛选：</label>
+                                <select id="filterSelect" class="border border-neutral-200 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none">
+                                    <option value="all">全部影像</option>
+                                    <option value="png">仅PNG格式</option>
+                                    <option value="recent">近30天上传</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- PACS数据库影像列表 - 动态加载 -->
+                        <div class="overflow-x-auto rounded-lg border border-neutral-200">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="bg-neutral-50 border-b border-neutral-200">
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium w-16">选择</th>
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium">影像ID</th>
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium">患者ID</th>
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium">文件名</th>
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium">上传时间</th>
+                                        <th class="text-left py-3 px-4 text-neutral-500 font-medium w-20">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pacs-image-list">
+                                    <!-- 加载状态 -->
+                                    <tr>
+                                        <td colspan="6" class="py-12 text-center text-neutral-400">
+                                            <div class="flex flex-col items-center">
+                                                <i class="fa fa-spinner fa-spin text-2xl mb-3 text-neutral-300"></i>
+                                                <p>加载影像数据中...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- 分页控件 -->
+                        <div class="flex items-center justify-between px-4 py-3 border-t border-neutral-200 bg-neutral-50 mt-1 rounded-b-lg">
+                            <div class="text-sm text-neutral-500">
+                                显示 <span id="page-range">0-0</span> 条，共 <span id="total-count">0</span> 条
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button id="prev-page" class="px-3 py-1 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <i class="fa fa-chevron-left text-xs"></i>
+                                </button>
+                                <span id="current-page" class="px-3 py-1 text-neutral-600">第 1 页</span>
+                                <button id="next-page" class="px-3 py-1 rounded border border-neutral-200 text-neutral-500 hover:bg-neutral-100 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    <i class="fa fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+<!-- 导入按钮 -->
+<div class="mt-6 flex justify-end">
+    <button id="import-selected" class="bg-success text-white px-5 py-2.5 rounded-lg hover:bg-success/90 transition-colors btn-effect flex items-center">
+        <i class="fa fa-download mr-2"></i>导入选中影像
+    </button>
+</div>
+                    </div>
+                </div>
+                <!-- 2. 本地文件上传标签内容 -->
+                <div class="tab-content hidden" id="local-upload">
+                    <div class="bg-white rounded-lg shadow-sm p-5">
+                        <h3 class="text-base font-semibold mb-4 flex items-center text-neutral-600">
+                            <i class="fa fa-file-image-o text-primary mr-2"></i>本地影像文件上传
+                        </h3>
+
+                        <!-- 患者ID和医生ID输入区域 -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label for="patientId" class="block text-sm font-medium text-neutral-500 mb-1">患者ID <span class="text-danger">*</span></label>
+                                <input type="text" id="patientId"
+                                       class="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                                       placeholder="请输入患者ID">
+                            </div>
+                           <!-- 修改后的医生ID输入框 -->
+                           <div>
+                                <label for="doctorId" class="block text-sm font-medium text-neutral-500 mb-1">医生ID <span class="text-danger">*</span></label>
+                                <input type="text" id="doctorId"
+                                    class="w-full px-4 py-2 border border-neutral-200 rounded-lg focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+                                       placeholder="请输入当前医生ID">
+                            </div>
+                        </div>
+
+                        <!-- 上传区域 -->
+                        <div class="upload-area rounded-lg p-8 text-center mb-6 cursor-pointer">
+                            <input type="file" id="file-upload" class="hidden" accept="image/png" multiple>
+                            <label for="file-upload" class="cursor-pointer">
+                                <div class="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fa fa-cloud-upload text-primary text-2xl"></i>
+                                </div>
+                                <h4 class="text-neutral-600 font-medium mb-2">拖拽文件到此处或点击上传</h4>
+                                <p class="text-neutral-400 text-sm mb-3">仅支持PNG格式，单文件不超过20MB</p>
+                            </label>
+                        </div>
+
+                        <!-- 选中文件列表 -->
+                        <div id="file-list" class="mb-6 hidden">
+                            <h4 class="text-sm font-medium text-neutral-600 mb-3">已选择文件：</h4>
+                            <ul id="selected-files" class="space-y-2 max-h-40 overflow-y-auto p-3 border border-neutral-200 rounded-lg">
+                                <!-- 选中的文件会动态显示在这里 -->
+                            </ul>
+                        </div>
+
+                        <!-- 上传按钮 -->
+                        <div class="flex justify-end">
+                            <button id="upload-files-btn" class="bg-primary text-white px-5 py-2.5 rounded-lg hover:bg-primary/90 transition-colors btn-effect flex items-center opacity-50 cursor-not-allowed" disabled>
+                                <i class="fa fa-upload mr-2"></i>确认上传
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 影像查看模态框 -->
+    <div id="image-modal" class="fixed inset-0 bg-black/70 z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col modal-enter">
+            <div class="p-4 border-b border-neutral-200 flex justify-between items-center">
+                <h3 class="font-medium text-neutral-600" id="modal-title">影像预览</h3>
+                <button id="close-modal" class="text-neutral-400 hover:text-neutral-600">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+            <div class="flex-1 p-4 overflow-auto flex justify-center items-center">
+                <img id="modal-image" src="" alt="影像预览" class="max-w-full max-h-[70vh] object-contain">
+            </div>
+            <div class="p-4 border-t border-neutral-200 flex justify-end">
+                <button id="confirm-import" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary/90 transition-colors mr-2">
+                    导入该影像
+                </button>
+                <button id="cancel-modal" class="border border-neutral-300 text-neutral-600 px-4 py-2 rounded-md hover:bg-neutral-50 transition-colors">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        const API_BASE_URL = ''; // 后端API基础路径，根据实际配置填写
+        let currentPage = 1;
+        let totalPages = 1;
+        let totalItems = 0;
+        const pageSize = 10; // 每页显示条数
+        let selectedFiles = []; // 存储选中的文件
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', () => {
+            // 验证登录状态
+            if (!localStorage.getItem('token')) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 加载用户信息
+            loadUserInfo();
+
+            // 加载影像列表
+            loadMedicalImages();
+
+            // 绑定事件
+            bindEvents();
+        });
+
+        // 加载用户信息
+        function loadUserInfo() {
+            // 从localStorage获取分散存储的医生信息
+            const doctorInfo = {
+                id: localStorage.getItem('doctorId'),
+                name: localStorage.getItem('doctorName'),
+                gender: localStorage.getItem('doctorGender'),
+                isAdmin: localStorage.getItem('doctorIsAdmin') === '1'
+            };
+
+            document.getElementById('user-name').textContent = doctorInfo.name || '未知用户';
+            document.getElementById('user-role').textContent = doctorInfo.isAdmin? '管理员' : '普通医生';
+            document.getElementById('user-avatar').src = doctorInfo.gender === '男'
+                ? 'https://picsum.photos/id/1012/200/200'
+                : 'https://picsum.photos/id/1027/200/200';
+
+
+        }
+
+        // 绑定所有事件
+        function bindEvents() {
+            // 标签切换事件
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 切换标签样式
+                    document.querySelectorAll('.tab-btn').forEach(b => {
+                        b.classList.remove('active', 'text-primary', 'bg-primary/10');
+                        b.classList.add('text-neutral-500', 'hover:bg-neutral-100');
+                    });
+                    this.classList.add('active', 'text-primary', 'bg-primary/10');
+                    this.classList.remove('text-neutral-500', 'hover:bg-neutral-100');
+
+                    // 切换内容显示
+                    const tabId = this.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.add('hidden');
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.remove('hidden');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            document.getElementById('import-selected').addEventListener('click', function() {
+    // 获取所有选中的影像
+    const selectedCheckboxes = document.querySelectorAll('.pacs-image-select:checked');
+    if (selectedCheckboxes.length === 0) {
+        alert('请先选择要导入的影像');
+        return;
+    }
+
+    // 获取第一个选中影像的ID和路径（如果需要支持多个，可修改为传递数组）
+    const firstSelected = selectedCheckboxes[0];
+    const imageId = firstSelected.getAttribute('data-id');
+
+    // 查找对应的行获取影像路径
+    const row = firstSelected.closest('tr');
+    const viewBtn = row.querySelector('.view-image');
+    const imageSrc = viewBtn ? viewBtn.getAttribute('data-src') : '';
+
+    // 跳转到新页面，传递选中的影像信息
+    window.location.href = `image_detail.html?id=${encodeURIComponent(imageId)}&src=${encodeURIComponent(imageSrc)}`;
+});
+
+
+            // 文件选择事件
+            document.getElementById('file-upload').addEventListener('change', handleFileSelection);
+
+            // 上传按钮点击事件
+            document.getElementById('upload-files-btn').addEventListener('click', uploadLocalFiles);
+
+            // 退出登录事件
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                if (confirm('确定要退出登录吗？')) {
+                    localStorage.clear();
+                    window.location.href = 'login.html';
+                }
+            });
+        }
+
+        // 处理文件选择
+        function handleFileSelection(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) {
+                selectedFiles = [];
+                updateFileList();
+                return;
+            }
+
+            // 验证文件格式
+            selectedFiles = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (!file.name.toLowerCase().endsWith('.png')) {
+                    alert(`文件 ${file.name} 不是PNG格式，请仅上传PNG文件`);
+                    continue;
+                }
+                selectedFiles.push(file);
+            }
+
+            // 更新文件列表显示
+            updateFileList();
+        }
+
+        // 更新文件列表显示
+        function updateFileList() {
+            const fileListContainer = document.getElementById('file-list');
+            const selectedFilesList = document.getElementById('selected-files');
+            const uploadBtn = document.getElementById('upload-files-btn');
+
+            if (selectedFiles.length === 0) {
+                fileListContainer.classList.add('hidden');
+                uploadBtn.disabled = true;
+                uploadBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                return;
+            }
+
+            // 显示文件列表
+            fileListContainer.classList.remove('hidden');
+            selectedFilesList.innerHTML = '';
+
+            selectedFiles.forEach((file, index) => {
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2); // 转换为MB
+                const listItem = document.createElement('li');
+                listItem.className = 'flex items-center justify-between p-2 bg-neutral-50 rounded';
+                listItem.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fa fa-file-image-o text-primary mr-2"></i>
+                        <div>
+                            <p class="text-sm text-neutral-600 truncate max-w-xs">${file.name}</p>
+                            <p class="text-xs text-neutral-400">${fileSize} MB</p>
+                        </div>
+                    </div>
+                    <button class="text-neutral-400 hover:text-danger transition-colors" data-index="${index}">
+                        <i class="fa fa-times"></i>
+                    </button>
+                `;
+                selectedFilesList.appendChild(listItem);
+            });
+
+            // 为删除按钮添加事件
+            document.querySelectorAll('#selected-files button').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    selectedFiles.splice(index, 1);
+                    updateFileList();
+                });
+            });
+
+            // 启用上传按钮
+            uploadBtn.disabled = false;
+            uploadBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        // 上传本地文件
+        async function uploadLocalFiles() {
+            const patientId = document.getElementById('patientId').value.trim();
+            const doctorId = document.getElementById('doctorId').value.trim();
+
+            // 表单验证
+            if (!patientId) {
+                alert('请输入患者ID');
+                return;
+            }
+
+            if (!doctorId) {
+                alert('未获取到医生ID，请重新登录');
+                return;
+            }
+
+            if (selectedFiles.length === 0) {
+                alert('请选择要上传的文件');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                // 逐个上传文件
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    const formData = new FormData();
+
+                    // 构造表单数据（与后端接口参数匹配）
+                    formData.append('patient_id', patientId);
+                    formData.append('doctor_id', doctorId);
+                    formData.append('upload_file', file);
+
+                    // 调用后端上传接口
+                    const response = await axios.post(`${API_BASE_URL}/api/v1/medical-images`, formData, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'multipart/form-data'
+                        },
+                        onUploadProgress: (progressEvent) => {
+                            const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
+                            console.log(`文件 ${file.name} 上传进度: ${percent}%`);
+                        }
+                    });
+
+                    console.log(`文件 ${file.name} 上传成功`, response.data);
+                }
+
+                alert('所有文件上传成功');
+                // 重置表单
+                document.getElementById('file-upload').value = '';
+                selectedFiles = [];
+                updateFileList();
+                document.getElementById('patientId').value = '';
+                // 刷新影像列表
+                loadMedicalImages();
+            } catch (error) {
+                console.error('文件上传失败', error);
+                const errorMsg = error.response?.data?.detail || '文件上传失败，请重试';
+                alert(`上传失败: ${errorMsg}`);
+            }
+        }
+
+        // 加载医疗影像列表
+        async function loadMedicalImages(skip = 0, limit = pageSize, search = '', filter = 'all') {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await axios.get(`${API_BASE_URL}/api/v1/medical-images`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    params: {
+                        skip,
+                        limit,
+                        search,
+                        filter_type: filter
+                    }
+                });
+
+                totalItems = response.data.length;
+                totalPages = Math.ceil(totalItems / pageSize);
+                currentPage = Math.floor(skip / pageSize) + 1;
+
+                // 更新分页控件
+                updatePagination();
+
+                // 渲染影像列表
+                renderImageList(response.data);
+
+            } catch (error) {
+                console.error('加载失败详情:', {
+                    url: `${API_BASE_URL}/api/v1/medical-images`,
+                    params: { skip, limit, search, filter_type: filter },
+                    error: error.response?.data || error.message
+                });
+
+                // 显示错误状态
+                const tableBody = document.getElementById('pacs-image-list');
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-danger">
+                            <div class="flex flex-col items-center">
+                                <i class="fa fa-exclamation-circle text-2xl mb-3"></i>
+                                <p>加载影像数据失败：${error.response?.data?.detail || '网络错误'}</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // 渲染影像列表
+        function renderImageList(images) {
+            const tableBody = document.getElementById('pacs-image-list');
+
+            if (images.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-neutral-400">
+                            <div class="flex flex-col items-center">
+                                <i class="fa fa-picture-o text-4xl mb-3 text-neutral-300"></i>
+                                <p>未找到影像数据</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            let html = '';
+            images.forEach(image => {
+                html += `
+                    <tr class="table-hover-effect">
+                        <td class="py-3 px-4">
+                            <input type="checkbox" class="pacs-image-select rounded text-primary focus:ring-primary" data-id="${image.image_id}">
+                        </td>
+                        <td class="py-3 px-4 text-neutral-600">${image.image_id}</td>
+                        <td class="py-3 px-4 text-neutral-600">${image.patient_id}</td>
+                        <td class="py-3 px-4 text-neutral-600">${image.file_name}</td>
+                        <td class="py-3 px-4 text-neutral-600">${new Date(image.import_time).toLocaleString()}</td>
+                        <td class="py-3 px-4">
+                            <button class="text-primary hover:text-primary/80 view-image" data-id="${image.image_id}" data-src="${image.file_path}">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tableBody.innerHTML = html;
+
+            // 绑定查看影像事件
+            document.querySelectorAll('.view-image').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const imageId = this.getAttribute('data-id');
+                    const imageSrc = this.getAttribute('data-src');
+                    openImageModal(imageId, imageSrc);
+                });
+            });
+        }
+
+        // 更新分页控件
+        function updatePagination() {
+            const start = (currentPage - 1) * pageSize + 1;
+            const end = Math.min(currentPage * pageSize, totalItems);
+
+            document.getElementById('page-range').textContent = `${start}-${end}`;
+            document.getElementById('total-count').textContent = totalItems;
+            document.getElementById('current-page').textContent = `第 ${currentPage} 页`;
+
+            const prevBtn = document.getElementById('prev-page');
+            const nextBtn = document.getElementById('next-page');
+
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage >= totalPages;
+
+            // 绑定分页事件
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    loadMedicalImages((currentPage - 2) * pageSize, pageSize);
+                }
+            };
+
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    loadMedicalImages(currentPage * pageSize, pageSize);
+                }
+            };
+        }
+
+        // 打开影像预览模态框
+        function openImageModal(imageId, imageSrc) {
+            document.getElementById('modal-title').textContent = `影像预览: ${imageId}`;
+            document.getElementById('modal-image').src = imageSrc;
+            document.getElementById('image-modal').classList.remove('hidden');
+            document.getElementById('image-modal').classList.add('flex');
+        }
+
+        // 关闭影像预览模态框
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('image-modal').classList.remove('flex');
+        });
+
+        document.getElementById('cancel-modal').addEventListener('click', () => {
+            document.getElementById('image-modal').classList.add('hidden');
+            document.getElementById('image-modal').classList.remove('flex');
+        });
+    </script>
+</body>
+</html>
